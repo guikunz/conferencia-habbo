@@ -10,8 +10,15 @@ st.set_page_config(page_title="Conferência Habbo", page_icon="🕵️‍♂️"
 
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
-PALAVRAS_PROIBIDAS = ["exército", "militar", "dme", "rcc", "csi", "dph", "marinha", "swat", "pmhh", "rhc", "asa", "dpe"]
-PALAVRAS_INAPROPRIADAS = ["sexo", "buceta", "piroca", "rola", "pau", "penis", "vagina", "xota", "cu", "fdp", "porra", "caralho"]
+# LISTAS ATUALIZADAS
+PALAVRAS_PROIBIDAS = [
+    "exército", "militar", "dme", "rcc", "csi", "dph", 
+    "marinha", "swat", "pmhh", "rhc", "asa", "dpe", "pho"
+]
+PALAVRAS_INAPROPRIADAS = [
+    "sexo", "buceta", "piroca", "rola", "pau", "penis", 
+    "vagina", "xota", "cu", "fdp", "porra", "caralho"
+]
 
 def verificar_nick(nick):
     nick = str(nick).strip()
@@ -24,9 +31,11 @@ def verificar_nick(nick):
         "ausente": None, "outra_org": None, "sem_requisitos": False
     }
 
+    # 1. Verifica Nick Inapropriado
     if any(p in nick.lower() for p in PALAVRAS_INAPROPRIADAS):
         resultado["inapropriado"] = True
 
+    # 2. Busca o Usuário (Com tentativas para evitar bloqueio)
     data = None
     sucesso_usuario = False
     
@@ -52,9 +61,11 @@ def verificar_nick(nick):
         resultado["inexistente"] = True
         return resultado
 
+    # 3. Verifica Visibilidade
     if not data.get("profileVisible", True):
         resultado["visibilidade_off"] = True
 
+    # 4. Verifica Modo Offline e Ausência
     last_access = data.get("lastAccessTime")
     if not last_access:
         resultado["modo_offline"] = True
@@ -68,6 +79,7 @@ def verificar_nick(nick):
         except ValueError:
             pass 
 
+    # 5. Verifica Grupos (Nome e Descrição)
     unique_id = data.get("uniqueId")
     encontrou_dic = False
 
@@ -77,13 +89,21 @@ def verificar_nick(nick):
                 r_grupos = requests.get(f"https://www.habbo.com.br/api/public/users/{unique_id}/groups", timeout=10)
                 if r_grupos.status_code == 200:
                     for grupo in r_grupos.json():
-                        texto = (grupo.get("name", "") + " " + grupo.get("description", "")).lower()
-                        if any(p in texto for p in PALAVRAS_PROIBIDAS):
-                            resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
-                            break
-                        if "polícia dic" in texto:
+                        nome_grupo = grupo.get("name", "").lower()
+                        desc_grupo = grupo.get("description", "").lower()
+                        
+                        # Verifica se pertence a OUTRAS ORGs (procura no nome ou na descrição)
+                        # Só grava a primeira org proibida que achar para não sobreescrever
+                        if not resultado["outra_org"]:
+                            if any(p in nome_grupo or p in desc_grupo for p in PALAVRAS_PROIBIDAS):
+                                resultado["outra_org"] = f"{nick} → {grupo.get('name', 'Sem Nome')}"
+                        
+                        # Verifica REQUISITOS (Grupo DIC ou Descrição com DIC)
+                        if "polícia dic" in nome_grupo or "dic" in desc_grupo:
                             encontrou_dic = True
-                    break 
+                            
+                    break # Se leu os grupos com sucesso, sai do loop de tentativas
+                
                 elif r_grupos.status_code == 429:
                     time.sleep(2.5)
                     continue
@@ -93,9 +113,12 @@ def verificar_nick(nick):
                 time.sleep(2)
                 continue
 
+    # 6. Verifica Missão
     motto = data.get("motto", "").lower()
     tem_missao_dic = ("[dic]" in motto or "[đic]" in motto) and "soldado" in motto
 
+    # 7. Conclusão dos Requisitos
+    # O soldado entra como irregular se não encontrou grupo da DIC E também não tem a missão de soldado
     if not encontrou_dic and not tem_missao_dic:
         resultado["sem_requisitos"] = True
 
@@ -106,7 +129,6 @@ st.title("🕵️‍♂️ Conferência de Soldados (DIC)")
 st.write("O sistema buscará os nicks diretamente da sua planilha do Google Sheets.")
 
 # CONFIGURAÇÃO DIRETA DO GOOGLE SHEETS
-# Verifiquei pela sua imagem que o ID e a aba estão corretos.
 SHEET_ID = "1XfJmLoTi9kbhYx9pRlpvVRX1EF6o2OB-_GXPDAC1TcY"
 ABA = "INICIO"
 url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
