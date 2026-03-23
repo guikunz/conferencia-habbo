@@ -5,22 +5,120 @@ from datetime import datetime, timezone
 import concurrent.futures
 import time
 
+# CONFIGURAÇÕES DA PÁGINA
+st.set_page_config(page_title="Conferência Habbo", page_icon="🕵️‍♂️")
+
+URL_USER = "https://www.habbo.com.br/api/public/users?name="
+
+PALAVRAS_PROIBIDAS = ["exército", "militar", "dme", "rcc", "csi", "dph"]
+PALAVRAS_INAPROPRIADAS = ["sexo", "buceta", "piroca", "rola", "pau", "penis", "vagina", "xota", "cu", "fdp", "porra", "caralho"]
+
+def verificar_nick(nick):
+    nick = str(nick).strip()
+    if not nick:
+        return None
+    
+    resultado = {
+        "nick": nick, "inexistente": False, "inapropriado": False,
+        "visibilidade_off": False, "modo_offline": False, 
+        "ausente": None, "outra_org": None, "sem_requisitos": False
+    }
+
+    if any(p in nick.lower() for p in PALAVRAS_INAPROPRIADAS):
+        resultado["inapropriado"] = True
+
+    data = None
+    sucesso_usuario = False
+    
+    for tentativa in range(3):
+        try:
+            r = requests.get(URL_USER + nick, timeout=10)
+            if r.status_code == 200:
+                data = r.json()
+                sucesso_usuario = True
+                break
+            elif r.status_code == 429:
+                time.sleep(2.5)
+                continue
+            elif r.status_code == 404:
+                break
+            else:
+                break
+        except requests.RequestException:
+            time.sleep(2)
+            continue
+
+    if not sucesso_usuario or not data:
+        resultado["inexistente"] = True
+        return resultado
+
+    if not data.get("profileVisible", True):
+        resultado["visibilidade_off"] = True
+
+    last_access = data.get("lastAccessTime")
+    if not last_access:
+        resultado["modo_offline"] = True
+    else:
+        try:
+            data_api = datetime.fromisoformat(last_access.replace('+0000', '+00:00'))
+            agora = datetime.now(timezone.utc)
+            dias = (agora - data_api).days
+            if dias >= 20:
+                resultado["ausente"] = f"{nick} ({dias} dias)"
+        except ValueError:
+            pass 
+
+    unique_id = data.get("uniqueId")
+    encontrou_dic = False
+
+    if unique_id:
+        for tentativa in range(3):
+            try:
+                r_grupos = requests.get(f"https://www.habbo.com.br/api/public/users/{unique_id}/groups", timeout=10)
+                if r_grupos.status_code == 200:
+                    for grupo in r_grupos.json():
+                        texto = (grupo.get("name", "") + " " + grupo.get("description", "")).lower()
+                        if any(p in texto for p in PALAVRAS_PROIBIDAS):
+                            resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
+                            break
+                        if "polícia dic" in texto:
+                            encontrou_dic = True
+                    break 
+                elif r_grupos.status_code == 429:
+                    time.sleep(2.5)
+                    continue
+                else:
+                    break
+            except requests.RequestException:
+                time.sleep(2)
+                continue
+
+    motto = data.get("motto", "").lower()
+    tem_missao_dic = ("[dic]" in motto or "[đic]" in motto) and "soldado" in motto
+
+    if not encontrou_dic and not tem_missao_dic:
+        resultado["sem_requisitos"] = True
+
+    return resultado
+
+# --- INTERFACE DO SITE ---
 st.title("🕵️‍♂️ Conferência de Soldados (DIC)")
 st.write("O sistema buscará os nicks diretamente da sua planilha do Google Sheets.")
 
 # CONFIGURAÇÃO DIRETA DO GOOGLE SHEETS
+# Verifiquei pela sua imagem que o ID e a aba estão corretos.
 SHEET_ID = "1XfJmLoTi9kbhYx9pRlpvVRX1EF6o2OB-_GXPDAC1TcY"
 ABA = "INICIO"
-url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx&sheet={ABA}"
+url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
 
 if st.button("Iniciar Verificação Agora", type="primary"):
     
     with st.spinner('Puxando dados da nuvem e verificando nicks...'):
         try:
-            # Lê o Google Sheets diretamente como Excel (mais estável para o Streamlit)
-            df = pd.read_excel(url_excel)
+            # Lê o Google Sheets
+            df = pd.read_excel(url_excel, sheet_name=ABA)
             
-            # Pega os nicks da segunda coluna (índice 1), pulando o cabeçalho
+            # Pega os nicks da segunda coluna (B), pulando o cabeçalho
             nicks_para_verificar = df.iloc[1:, 1].dropna().tolist()
             
             st.info(f"Total de {len(nicks_para_verificar)} nicks encontrados na planilha.")
@@ -28,7 +126,6 @@ if st.button("Iniciar Verificação Agora", type="primary"):
             ausentes, outras_orgs, sem_requisitos = [], [], []
             modo_offline, visibilidade_off, nick_inexistente, nick_inapropriado = [], [], [], []
 
-            # Processamento paralelo (3 trabalhadores para evitar bloqueio)
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 resultados = list(executor.map(verificar_nick, nicks_para_verificar))
 
@@ -69,4 +166,4 @@ if st.button("Iniciar Verificação Agora", type="primary"):
             )
 
         except Exception as e:
-            st.error(f"Erro ao conectar com o Google Sheets. Verifique se a planilha está com acesso 'Qualquer pessoa com o link'.\nErro: {e}")
+            st.error(f"Erro crítico: {e}")
