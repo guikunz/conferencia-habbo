@@ -182,42 +182,4 @@ if st.button("Iniciar Verificação e Gerar Doc", type="primary"):
             total = sum(map(len, [ausentes, outras_orgs, sem_requisitos, modo_offline, visibilidade_off, nick_inexistente, nick_inapropriado]))
             
             # PACOTE DE DADOS PARA ENVIAR AO GOOGLE DOCS
-            dados_para_google = {
-                "data_hoje": datetime.now().strftime("%d/%m/%Y"),
-                "total": str(total),
-                "qtd_ausentes": str(len(ausentes)),
-                "lista_ausentes": formatar_ausentes(ausentes),
-                "qtd_orgs": str(len(outras_orgs)),
-                "lista_orgs": formatar_orgs(outras_orgs),
-                "qtd_offline": str(len(modo_offline)),
-                "lista_offline": formatar_padrao(modo_offline),
-                "qtd_sem_req": str(len(sem_requisitos)),
-                "lista_sem_req": formatar_padrao(sem_requisitos),
-                "qtd_visibilidade": str(len(visibilidade_off)),
-                "lista_visibilidade": formatar_padrao(visibilidade_off),
-                "qtd_inexistente": str(len(nick_inexistente)),
-                "lista_inexistente": formatar_padrao(nick_inexistente),
-                "qtd_inapropriado": str(len(nick_inapropriado)),
-                "lista_inapropriado": formatar_padrao(nick_inapropriado)
-            }
-
-            # VERIFICA SE A URL FOI COLOCADA
-            if URL_WEBHOOK_GOOGLE == "COLE_A_URL_DO_APP_DA_WEB_AQUI":
-                st.error("⚠️ Você esqueceu de colocar a URL do Google Apps Script na linha 129 do código no GitHub!")
-            else:
-                # Envia os dados para o Google Apps Script
-                resposta = requests.post(URL_WEBHOOK_GOOGLE, json=dados_para_google)
-                
-                try:
-                    resultado_api = resposta.json()
-                    if resultado_api.get("status") == "sucesso":
-                        st.success("Verificação concluída e Relatório gerado com sucesso!")
-                        url_doc = resultado_api.get('url')
-                        st.markdown(f"### 📄 **[CLIQUE AQUI PARA ABRIR O SEU RELATÓRIO NO GOOGLE DOCS]({url_doc})**")
-                    else:
-                        st.error(f"Erro ao gerar Google Doc: {resultado_api.get('mensagem')}")
-                except Exception as e_json:
-                    st.error(f"Erro ao processar a resposta do Google (talvez o Apps Script não tenha sido implantado para 'Qualquer Pessoa'). Resposta crua: {resposta.text}")
-
-        except Exception as e:
-            st.error(f"Erro crítico: {e}")
+            dados
