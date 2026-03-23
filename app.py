@@ -13,7 +13,7 @@ URL_USER = "https://www.habbo.com.br/api/public/users?name="
 # LISTAS ATUALIZADAS
 PALAVRAS_PROIBIDAS = [
     "exército", "militar", "dme", "rcc", "csi", "dph", 
-    "marinha", "swat", "pmhh", "rhc", "dpe", "pho", "ex.BR"
+    "marinha", "swat", "pmhh", "rhc", "dpe", "pho", "ex.br"
 ]
 PALAVRAS_INAPROPRIADAS = [
     "sexo", "buceta", "piroca", "rola", "pau", "penis", 
