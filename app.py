@@ -10,7 +10,7 @@ st.set_page_config(page_title="Conferência Habbo", page_icon="🕵️‍♂️"
 
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
-PALAVRAS_PROIBIDAS = ["exército", "militar", "dme", "rcc", "csi", "dph"]
+PALAVRAS_PROIBIDAS = ["exército", "militar", "dme", "rcc", "csi", "dph", "marinha", "swat", "pmhh", "rhc", "asa", "dpe"]
 PALAVRAS_INAPROPRIADAS = ["sexo", "buceta", "piroca", "rola", "pau", "penis", "vagina", "xota", "cu", "fdp", "porra", "caralho"]
 
 def verificar_nick(nick):
