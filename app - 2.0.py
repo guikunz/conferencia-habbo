@@ -150,7 +150,7 @@ ABA = "INICIO"
 url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
 
 # ⚠️ COLOQUE AQUI A URL DO APP DA WEB QUE VOCÊ COPIOU LÁ NO GOOGLE APPS SCRIPT
-URL_WEBHOOK_GOOGLE = "COLE_A_URL_DO_APP_DA_WEB_AQUI"
+URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbz--5QLXcgj14H3JQidJ17A7orRrIDoBmDApdDMHUVO9gy1z7KzV1K7A_Fs496IIfzV/exec"
 
 if st.button("Iniciar Verificação e Gerar Doc", type="primary"):
     
