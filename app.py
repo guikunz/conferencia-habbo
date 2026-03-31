@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import concurrent.futures
 import time
 
@@ -70,9 +70,19 @@ def verificar_nick(nick):
         resultado["modo_offline"] = True
     else:
         try:
+            # Pega o tempo da API (UTC)
             data_api = datetime.fromisoformat(last_access.replace('+0000', '+00:00'))
-            agora = datetime.now(timezone.utc)
-            dias = (agora - data_api).days
+            
+            # Define o fuso horário de Brasília (UTC-3)
+            fuso_brasilia = timezone(timedelta(hours=-3))
+            
+            # Converte a data do Habbo e a data de hoje para Brasília, extraindo apenas o "dia" (.date())
+            data_api_br = data_api.astimezone(fuso_brasilia).date()
+            hoje_br = datetime.now(fuso_brasilia).date()
+            
+            # Calcula a diferença de dias no calendário
+            dias = (hoje_br - data_api_br).days
+            
             if dias >= 20:
                 resultado["ausente"] = f"{nick} ({dias} dias)"
         except ValueError:
@@ -178,7 +188,10 @@ if st.button("Iniciar Verificação Agora", type="primary"):
                 if res["outra_org"]: outras_orgs.append(res["outra_org"])
                 if res["sem_requisitos"]: sem_requisitos.append(nick)
 
-            data_hoje = datetime.now().strftime("%d/%m/%Y")
+            # Usando fuso de brasília na data de geração do relatório também
+            fuso_br = timezone(timedelta(hours=-3))
+            data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
+            
             def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 
             total = sum(map(len, [ausentes, outras_orgs, sem_requisitos, modo_offline, visibilidade_off, nick_inexistente, nick_inapropriado]))
@@ -229,7 +242,7 @@ if 'relatorio_texto' in st.session_state:
     st.download_button(
         label="📥 Baixar Relatório .txt",
         data=st.session_state.relatorio_texto,
-        file_name=f"relatorio_{datetime.now().strftime('%d_%m_%Y')}.txt"
+        file_name=f"relatorio_{datetime.now(timezone(timedelta(hours=-3))).strftime('%d_%m_%Y')}.txt"
     )
 
     # BOTÃO 2: GOOGLE DOCS (Aparece apenas se houver irregulares)
