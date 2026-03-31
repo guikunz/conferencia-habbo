@@ -70,18 +70,17 @@ def verificar_nick(nick):
         resultado["modo_offline"] = True
     else:
         try:
-            # Pega o tempo da API (UTC)
+            # Pega o tempo da API (UTC) e o tempo de agora (UTC)
             data_api = datetime.fromisoformat(last_access.replace('+0000', '+00:00'))
+            agora = datetime.now(timezone.utc)
             
-            # Define o fuso horário de Brasília (UTC-3)
-            fuso_brasilia = timezone(timedelta(hours=-3))
+            # Calcula o tempo exato em segundos e converte para dias fracionados
+            segundos_ausente = (agora - data_api).total_seconds()
+            dias_exatos = segundos_ausente / 86400
             
-            # Converte a data do Habbo e a data de hoje para Brasília, extraindo apenas o "dia" (.date())
-            data_api_br = data_api.astimezone(fuso_brasilia).date()
-            hoje_br = datetime.now(fuso_brasilia).date()
-            
-            # Calcula a diferença de dias no calendário
-            dias = (hoje_br - data_api_br).days
+            # Arredonda o valor para bater com o visual do Habbo 
+            # (Ex: 19.6 dias vira 20 dias no cálculo do script)
+            dias = int(round(dias_exatos))
             
             if dias >= 20:
                 resultado["ausente"] = f"{nick} ({dias} dias)"
@@ -188,7 +187,7 @@ if st.button("Iniciar Verificação Agora", type="primary"):
                 if res["outra_org"]: outras_orgs.append(res["outra_org"])
                 if res["sem_requisitos"]: sem_requisitos.append(nick)
 
-            # Usando fuso de brasília na data de geração do relatório também
+            # Usando fuso de brasília na data de geração do relatório
             fuso_br = timezone(timedelta(hours=-3))
             data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
             
