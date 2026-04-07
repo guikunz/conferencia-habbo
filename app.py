@@ -121,12 +121,13 @@ def verificar_nick(nick, categoria):
             
     elif categoria in ["Cabos a Subtenentes", "Aspirantes a Coronéis"]:
         check_grupos = ["[dic] praças", "[dic] oficiais", "[dic] oficiais superiores"]
-        if not any(g in grupos_identificados for g in check_grupos):
+        # Verifica se alguma das palavras do check_grupos está contida nos grupos do policial
+        if not any(req in g for g in grupos_identificados for req in check_grupos):
             resultado["sem_requisitos"] = True
             
     elif categoria == "Cargos Executivos":
         check_exec = ["[dic] corpo exec. superior", "[dic] corpo executivo"]
-        if not any(g in grupos_identificados for g in check_exec):
+        if not any(req in g for g in grupos_identificados for req in check_exec):
             resultado["sem_requisitos"] = True
 
     return resultado
