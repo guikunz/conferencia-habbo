@@ -1,5 +1,5 @@
 import streamlit as st
-import pandas as pd
+import pd
 import requests
 from datetime import datetime, timezone, timedelta
 import concurrent.futures
@@ -12,7 +12,7 @@ URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
 # LISTAS DE FILTRO
 PALAVRAS_PROIBIDAS = [
-    "exército", "militar", "dme", "rcc", "csi", "dph", 
+    "exército", "dme", "rcc", "csi", "dph", 
     "marinha", "swat", "pmhh", "rhc", "dpe", "pho", "ex.br"
 ]
 PALAVRAS_INAPROPRIADAS = [
@@ -98,7 +98,6 @@ def verificar_nick(nick, categoria):
                         nome_l = grupo.get("name", "").lower()
                         desc_l = grupo.get("description", "").lower()
                         
-                        # Verifica se é grupo de departamento para patentes altas
                         is_dic_dept = False
                         if categoria in ["Aspirantes a Coronéis", "Cargos Executivos"]:
                             if nome_l.startswith("[dic]"):
@@ -116,20 +115,20 @@ def verificar_nick(nick, categoria):
 
     motto = data.get("motto", "").lower()
     
+    # LÓGICA DE GRUPOS CORRIGIDA
     if categoria == "Soldados":
         if not any("polícia dic" in g for g in grupos_identificados) and "[dic]" not in motto:
             resultado["sem_requisitos"] = True
             
-    elif categoria == "Cabos a Subtenentes":
-        if not any("[dic] praças" in g for g in grupos_identificados):
-            resultado["sem_requisitos"] = True
-            
-    elif categoria == "Aspirantes a Coronéis":
-        if not any(g in grupos_identificados for g in ["[dic] praças", "[dic] oficiais", "[dic] oficiais superiores"]):
+    elif categoria in ["Cabos a Subtenentes", "Aspirantes a Coronéis"]:
+        # Se NÃO tiver o grupo Praças, NEM Oficiais, NEM Oficiais Superiores, está irregular
+        check_grupos = ["[dic] praças", "[dic] oficiais", "[dic] oficiais superiores"]
+        if not any(g in grupos_identificados for g in check_grupos):
             resultado["sem_requisitos"] = True
             
     elif categoria == "Cargos Executivos":
-        if not any(g in grupos_identificados for g in ["[dic] corpo exec. superior", "[dic] corpo executivo"]):
+        check_exec = ["[dic] corpo exec. superior", "[dic] corpo executivo"]
+        if not any(g in grupos_identificados for g in check_exec):
             resultado["sem_requisitos"] = True
 
     return resultado
@@ -176,8 +175,6 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
             df = pd.read_excel(url_excel, sheet_name="INICIO")
             nicks = df.iloc[1:, 1].dropna().tolist()
             
-            st.info(f"Total de {len(nicks)} nicks encontrados na planilha.")
-            
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
 
@@ -187,42 +184,19 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
                 if not r: continue
                 n = r["nick"]
                 
-                # Hierarquia de prioridade (continue impede que ele vá para outra lista)
-                if r["inexistente"]: 
-                    inex.append(n)
-                    continue
-                if r["inapropriado"]: 
-                    inap.append(n)
-                    continue
+                if r["inexistente"]: inex.append(n); continue
+                if r["inapropriado"]: inap.append(n); continue
                     
-                if r["ausente_90_mais"]: 
-                    aus_90.append(r["ausente_90_mais"])
-                    continue
-                if r["ausente_60_mais"]: 
-                    aus_60.append(r["ausente_60_mais"])
-                    continue
-                if r["ausente_20_mais"]: 
-                    aus_20.append(r["ausente_20_mais"])
-                    continue
-                if r["ausente_7_19"]: 
-                    aus_7.append(r["ausente_7_19"])
-                    continue
-                if r["ausente_padrao"]: 
-                    aus_p.append(r["ausente_padrao"])
-                    continue
+                if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"]); continue
+                if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"]); continue
+                if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"]); continue
+                if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"]); continue
+                if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"]); continue
                     
-                if r["outra_org"]: 
-                    orgs.append(r["outra_org"])
-                    continue
-                if r["modo_offline"]: 
-                    off.append(n)
-                    continue
-                if r["sem_requisitos"]: 
-                    sem_req.append(n)
-                    continue
-                if r["visibilidade_off"]: 
-                    vis.append(n)
-                    continue
+                if r["outra_org"]: orgs.append(r["outra_org"]); continue
+                if r["modo_offline"]: off.append(n); continue
+                if r["sem_requisitos"]: sem_req.append(n); continue
+                if r["visibilidade_off"]: vis.append(n); continue
 
             fuso_br = timezone(timedelta(hours=-3))
             data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
@@ -256,14 +230,13 @@ if 'gerado' in st.session_state:
     st.text_area("Relatório:", st.session_state.relatorio_texto, height=300)
     
     if st.button("Gerar no Google Docs 📄", type="secondary"):
-        with st.spinner("Gerando relatório no Google Docs, por favor aguarde..."):
+        with st.spinner("Gerando relatório no Google Docs..."):
             try:
                 res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
                 if res.get("status") == "sucesso": 
-                    st.success("Relatório gerado com sucesso!")
-                    url_doc = res.get('url')
-                    st.markdown(f"### 📄 **[CLIQUE AQUI PARA ABRIR O SEU RELATÓRIO]({url_doc})**")
+                    st.success("Relatório gerado!")
+                    st.markdown(f"### 📄 **[CLIQUE AQUI PARA ABRIR O SEU RELATÓRIO]({res.get('url')})**")
                 else:
                     st.error(f"Erro no Google: {res.get('mensagem')}")
             except Exception as e:
-                st.error(f"Erro de comunicação com o Google: {e}")
+                st.error(f"Erro de comunicação: {e}")
