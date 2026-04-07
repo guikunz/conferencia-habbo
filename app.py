@@ -225,4 +225,4 @@ if 'gerado' in st.session_state:
             st.success("Gerado!")
             st.markdown(f"[Abrir Doc]({res['url']})")
         else:
-            st.error("Erro na integração")
+            st.error(f"Erro no Google: {res.get('mensagem')}")
