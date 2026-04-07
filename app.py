@@ -103,6 +103,10 @@ def verificar_nick(nick, categoria):
                             if nome_l.startswith("[dic]"):
                                 is_dic_dept = True
                                 
+                        # Exceção específica para não marcar o grupo CSI Corredor
+                        if categoria == "Aspirantes a Coronéis" and "[csi] corredor" in nome_l:
+                            is_dic_dept = True
+                                
                         if not is_dic_dept:
                             if not resultado["outra_org"] and any(p in nome_l or p in desc_l for p in PALAVRAS_PROIBIDAS):
                                 resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
@@ -121,7 +125,6 @@ def verificar_nick(nick, categoria):
             
     elif categoria in ["Cabos a Subtenentes", "Aspirantes a Coronéis"]:
         check_grupos = ["[dic] praças", "[dic] oficiais", "[dic] oficiais superiores"]
-        # Verifica se alguma das palavras do check_grupos está contida nos grupos do policial
         if not any(req in g for g in grupos_identificados for req in check_grupos):
             resultado["sem_requisitos"] = True
             
