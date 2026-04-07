@@ -1,5 +1,5 @@
 import streamlit as st
-import pd
+import pandas as pd
 import requests
 from datetime import datetime, timezone, timedelta
 import concurrent.futures
@@ -115,13 +115,11 @@ def verificar_nick(nick, categoria):
 
     motto = data.get("motto", "").lower()
     
-    # LÓGICA DE GRUPOS CORRIGIDA
     if categoria == "Soldados":
         if not any("polícia dic" in g for g in grupos_identificados) and "[dic]" not in motto:
             resultado["sem_requisitos"] = True
             
     elif categoria in ["Cabos a Subtenentes", "Aspirantes a Coronéis"]:
-        # Se NÃO tiver o grupo Praças, NEM Oficiais, NEM Oficiais Superiores, está irregular
         check_grupos = ["[dic] praças", "[dic] oficiais", "[dic] oficiais superiores"]
         if not any(g in grupos_identificados for g in check_grupos):
             resultado["sem_requisitos"] = True
