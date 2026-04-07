@@ -321,7 +321,6 @@ if 'relatorio_texto' in st.session_state:
     if st.session_state.total_irregulares > 0:
         st.markdown("---")
         st.write("Deseja criar a versão formatada no Google Docs para envio?")
-        st.caption("Aviso: Verifique se o seu Google Apps Script já está configurado para receber as novas variáveis desta categoria.")
         
         if st.button("Gerar Relatório no Google Docs 📄", type="secondary"):
             with st.spinner("Gerando documento, por favor aguarde..."):
