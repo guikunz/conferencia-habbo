@@ -151,8 +151,15 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 
 # --- INTERFACE ---
 st.title("🕵️‍♂️ Central de Conferência (DIC)")
-categoria_sel = st.selectbox("Selecione a patente:", ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"])
 
+# Criando colunas para não ocupar a tela toda
+col1, col2 = st.columns([1, 2]) 
+
+with col1:
+    categoria_sel = st.selectbox(
+        "Selecione a patente:", 
+        ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"]
+    )
 SHEET_ID = "1XfJmLoTi9kbhYx9pRlpvVRX1EF6o2OB-_GXPDAC1TcY"
 url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
 
