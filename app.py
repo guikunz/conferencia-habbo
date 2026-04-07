@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime, timezone, timedelta
@@ -19,7 +20,7 @@ PALAVRAS_INAPROPRIADAS = [
     "vagina", "xota", "cu", "fdp", "porra", "caralho"
 ]
 
-URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbwPuO6ZV1x2hQ8myqIyj5OYQDuFKwNNwMHtYQ9Y-7G44tT0YfZgCYyhr67ICO03tUGJSQ/exec"
+URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbz--5QLXcgj14H3JQidJ17A7orRrIDoBmDApdDMHUVO9gy1z7KzV1K7A_Fs496IIfzV/exec"
 
 def verificar_nick(nick, categoria):
     nick = str(nick).strip()
@@ -108,7 +109,6 @@ def verificar_nick(nick, categoria):
 
     motto = data.get("motto", "").lower()
     
-    # LÓGICA DE GRUPOS POR CATEGORIA
     if categoria == "Soldados":
         if not any("polícia dic" in g for g in grupos_identificados) and "[dic]" not in motto:
             resultado["sem_requisitos"] = True
@@ -122,7 +122,6 @@ def verificar_nick(nick, categoria):
             resultado["sem_requisitos"] = True
             
     elif categoria == "Cargos Executivos":
-        # Se não tiver o grupo Executivo Superior nem o Executivo normal, está irregular
         if not any(g in grupos_identificados for g in ["[dic] corpo exec. superior", "[dic] corpo executivo"]):
             resultado["sem_requisitos"] = True
 
@@ -135,6 +134,18 @@ def formatar_padrao(lista):
 def formatar_ausentes(lista):
     if not lista: return "Nenhum irregular nesta categoria."
     return "\n\n".join([f"Nick: {i.split(' (')[0]}\nQuantidade de dias ausente: {i.split('(')[1].replace(' dias)', '')}\nPrint: " for i in lista])
+
+def formatar_orgs(orgs_list):
+    if not orgs_list: return "Nenhum irregular nesta categoria."
+    texto_final = []
+    for item in orgs_list:
+        if " → " in item:
+            nick = item.split(" → ")[0]
+            grupo = item.split(" → ")[1]
+            texto_final.append(f"Nick: {nick}\nGrupo policial que possui: {grupo}\nPrint: ")
+        else:
+            texto_final.append(f"Nick: {item}\nGrupo policial que possui: ?\nPrint: ")
+    return "\n\n".join(texto_final)
 
 def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 
@@ -154,7 +165,6 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
 
-            # Filtragem de listas (aus_padrao, aus_7_19, etc...)
             aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap = [], [], [], [], [], [], [], [], [], [], []
 
             for r in resultados:
@@ -176,7 +186,6 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
             data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
             total = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
 
-            # Montagem do relatório para o text_area
             relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total}\n"
             relatorio += f"\nAusentes: {listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
             relatorio += f"\n\nOutras Orgs: {listar(orgs)}"
@@ -205,4 +214,8 @@ if 'gerado' in st.session_state:
     st.text_area("Relatório:", st.session_state.relatorio_texto, height=300)
     if st.button("Gerar no Google Docs 📄"):
         res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
-        if res.get("status") == "sucesso": st.success("Gerado!"); st.markdown(f"[Abrir Doc]({res['url']})")
+        if res.get("status") == "sucesso": 
+            st.success("Gerado!")
+            st.markdown(f"[Abrir Doc]({res['url']})")
+        else:
+            st.error("Erro na integração")
