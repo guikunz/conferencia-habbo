@@ -219,10 +219,20 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
 
 if 'gerado' in st.session_state:
     st.text_area("Relatório:", st.session_state.relatorio_texto, height=300)
-    if st.button("Gerar no Google Docs 📄"):
-        res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
-        if res.get("status") == "sucesso": 
-            st.success("Gerado!")
-            st.markdown(f"[Abrir Doc]({res['url']})")
-        else:
-            st.error(f"Erro no Google: {res.get('mensagem')}")
+    
+    # Botão para o Google Docs
+    if st.button("Gerar no Google Docs 📄", type="secondary"):
+        # O comando st.spinner é o que faz a bolinha girar
+        with st.spinner("Gerando relatório no Google Docs, por favor aguarde..."):
+            try:
+                res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
+                
+                if res.get("status") == "sucesso": 
+                    st.success("Relatório gerado com sucesso!")
+                    url_doc = res.get('url')
+                    st.markdown(f"### 📄 **[CLIQUE AQUI PARA ABRIR O SEU RELATÓRIO]({url_doc})**")
+                else:
+                    st.error(f"Erro no Google: {res.get('mensagem')}")
+                    
+            except Exception as e:
+                st.error(f"Erro de comunicação com o Google: {e}")
