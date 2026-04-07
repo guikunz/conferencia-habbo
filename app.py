@@ -20,7 +20,7 @@ PALAVRAS_INAPROPRIADAS = [
     "vagina", "xota", "cu", "fdp", "porra", "caralho"
 ]
 
-URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbwPuO6ZV1x2hQ8myqIyj5OYQDuFKwNNwMHtYQ9Y-7G44tT0YfZgCYyhr67ICO03tUGJSQ/exec"
+URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbz--5QLXcgj14H3JQidJ17A7orRrIDoBmDApdDMHUVO9gy1z7KzV1K7A_Fs496IIfzV/exec"
 
 def verificar_nick(nick, categoria):
     nick = str(nick).strip()
@@ -98,8 +98,15 @@ def verificar_nick(nick, categoria):
                         nome_l = grupo.get("name", "").lower()
                         desc_l = grupo.get("description", "").lower()
                         
-                        if not resultado["outra_org"] and any(p in nome_l or p in desc_l for p in PALAVRAS_PROIBIDAS):
-                            resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
+                        # Verifica se é grupo de departamento para patentes altas
+                        is_dic_dept = False
+                        if categoria in ["Aspirantes a Coronéis", "Cargos Executivos"]:
+                            if nome_l.startswith("[dic]"):
+                                is_dic_dept = True
+                                
+                        if not is_dic_dept:
+                            if not resultado["outra_org"] and any(p in nome_l or p in desc_l for p in PALAVRAS_PROIBIDAS):
+                                resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
                         
                         grupos_identificados.append(nome_l)
                     break 
@@ -152,7 +159,6 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 # --- INTERFACE ---
 st.title("🕵️‍♂️ Central de Conferência (DIC)")
 
-# Criando colunas para não ocupar a tela toda
 col1, col2 = st.columns([1, 2]) 
 
 with col1:
@@ -160,14 +166,17 @@ with col1:
         "Selecione a patente:", 
         ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"]
     )
+
 SHEET_ID = "1XfJmLoTi9kbhYx9pRlpvVRX1EF6o2OB-_GXPDAC1TcY"
 url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
 
 if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
-    with st.spinner('Verificando...'):
+    with st.spinner('Puxando dados da planilha e verificando nicks...'):
         try:
             df = pd.read_excel(url_excel, sheet_name="INICIO")
             nicks = df.iloc[1:, 1].dropna().tolist()
+            
+            st.info(f"Total de {len(nicks)} nicks encontrados na planilha.")
             
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
@@ -177,17 +186,43 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
             for r in resultados:
                 if not r: continue
                 n = r["nick"]
-                if r["inexistente"]: inex.append(n); continue
-                if r["inapropriado"]: inap.append(n)
-                if r["visibilidade_off"]: vis.append(n)
-                if r["modo_offline"]: off.append(n)
-                if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"])
-                if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"])
-                if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"])
-                if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"])
-                if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"])
-                if r["outra_org"]: orgs.append(r["outra_org"])
-                if r["sem_requisitos"]: sem_req.append(n)
+                
+                # Hierarquia de prioridade (continue impede que ele vá para outra lista)
+                if r["inexistente"]: 
+                    inex.append(n)
+                    continue
+                if r["inapropriado"]: 
+                    inap.append(n)
+                    continue
+                    
+                if r["ausente_90_mais"]: 
+                    aus_90.append(r["ausente_90_mais"])
+                    continue
+                if r["ausente_60_mais"]: 
+                    aus_60.append(r["ausente_60_mais"])
+                    continue
+                if r["ausente_20_mais"]: 
+                    aus_20.append(r["ausente_20_mais"])
+                    continue
+                if r["ausente_7_19"]: 
+                    aus_7.append(r["ausente_7_19"])
+                    continue
+                if r["ausente_padrao"]: 
+                    aus_p.append(r["ausente_padrao"])
+                    continue
+                    
+                if r["outra_org"]: 
+                    orgs.append(r["outra_org"])
+                    continue
+                if r["modo_offline"]: 
+                    off.append(n)
+                    continue
+                if r["sem_requisitos"]: 
+                    sem_req.append(n)
+                    continue
+                if r["visibilidade_off"]: 
+                    vis.append(n)
+                    continue
 
             fuso_br = timezone(timedelta(hours=-3))
             data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
@@ -220,19 +255,15 @@ if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
 if 'gerado' in st.session_state:
     st.text_area("Relatório:", st.session_state.relatorio_texto, height=300)
     
-    # Botão para o Google Docs
     if st.button("Gerar no Google Docs 📄", type="secondary"):
-        # O comando st.spinner é o que faz a bolinha girar
         with st.spinner("Gerando relatório no Google Docs, por favor aguarde..."):
             try:
                 res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
-                
                 if res.get("status") == "sucesso": 
                     st.success("Relatório gerado com sucesso!")
                     url_doc = res.get('url')
                     st.markdown(f"### 📄 **[CLIQUE AQUI PARA ABRIR O SEU RELATÓRIO]({url_doc})**")
                 else:
                     st.error(f"Erro no Google: {res.get('mensagem')}")
-                    
             except Exception as e:
                 st.error(f"Erro de comunicação com o Google: {e}")
