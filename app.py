@@ -92,7 +92,7 @@ PALAVRAS_INAPROPRIADAS = [
     "vagina", "xota", "cu", "fdp", "porra", "caralho"
 ]
 
-URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbz--5QLXcgj14H3JQidJ17A7orRrIDoBmDApdDMHUVO9gy1z7KzV1K7A_Fs496IIfzV/exec"
+URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbwt60cX_RXKl7X0jS6LeqDhXdOV1QGm1d4ErZkntJPWJfbLTVHBBOSHxd2uMaWDwEuVGA/exec"
 
 def verificar_nick(nick, categoria):
     nick = str(nick).strip()
