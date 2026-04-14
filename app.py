@@ -9,6 +9,9 @@ import io
 # CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Central de conferências DIC/Sp", page_icon="🕵️", layout="wide")
 
+# ==========================================
+# --- INJEÇÃO DE CSS (O SEGREDO DO VISUAL) ---
+# ==========================================
 st.markdown("""
 <style>
     /* Estilizando o fundo para um tom muito escuro (quase preto) */
@@ -22,6 +25,16 @@ st.markdown("""
         color: #eab308 !important;
         text-transform: uppercase;
         letter-spacing: 1px;
+    }
+
+    /* Titulos das seções menores */
+    .section-title {
+        color: #eab308;
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     /* Estilizando os containers (as caixas em volta dos itens) */
@@ -88,6 +101,12 @@ st.markdown("""
         color: #ffffff !important;
         border: 1px solid #444 !important;
         border-radius: 8px;
+    }
+    
+    /* Cor da borda ao focar na caixa de texto ou menu */
+    .stTextArea textarea:focus, div[data-baseweb="select"] > div:focus-within {
+        border-color: #eab308 !important;
+        box-shadow: 0 0 0 1px #eab308 !important;
     }
     
     /* Header estilizado imitando a imagem */
@@ -243,7 +262,7 @@ with st.container(border=True):
     col_esq, col_dir = st.columns([2, 1], gap="large") 
     
     with col_esq:
-        st.subheader("📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO")
+        st.markdown("<div class='section-title'>📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO</div>", unsafe_allow_html=True)
         dados_colados = st.text_area(
             "Copie as linhas da sua planilha e cole abaixo:", 
             height=130, 
@@ -252,14 +271,14 @@ with st.container(border=True):
         )
 
     with col_dir:
-        st.subheader("🕵️ CONSULTA POR GRADUAÇÃO")
+        st.markdown("<div class='section-title'>🕵️ CONSULTA POR GRADUAÇÃO</div>", unsafe_allow_html=True)
         categoria_sel = st.selectbox(
             "Selecione uma categoria de patente:", 
             ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"],
             label_visibility="collapsed"
         )
         st.markdown("<br>", unsafe_allow_html=True)
-        iniciar_btn = st.button(f"🔎 Iniciar Verificação", type="primary", use_container_width=True)
+        iniciar_btn = st.button(f"🔎 INICIAR VERIFICAÇÃO", type="primary", use_container_width=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -349,18 +368,20 @@ if 'gerado' in st.session_state and st.session_state.gerado:
     col_view_esq, col_view_dir = st.columns([1, 1.2], gap="medium")
     
     with col_view_esq:
-        st.subheader("📑 REGISTROS ANALISADOS")
+        st.markdown("<div class='section-title'>📑 REGISTROS ANALISADOS</div>", unsafe_allow_html=True)
         st.dataframe(st.session_state.df_view, use_container_width=True, height=350)
         
     with col_view_dir:
-        st.subheader("📝 CONSOLIDAÇÃO DOS DADOS")
+        st.markdown("<div class='section-title'>📝 CONSOLIDAÇÃO DOS DADOS</div>", unsafe_allow_html=True)
         st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
         
         if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
             with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
                 try:
+                    # Faz o envio dos dados
                     resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
                     
+                    # Tenta decodificar a resposta
                     try:
                         res = resposta_google.json()
                         if res.get("status") == "sucesso": 
@@ -378,6 +399,7 @@ if 'gerado' in st.session_state and st.session_state.gerado:
                             st.error(f"Falha na comunicação: {res.get('mensagem')}")
                             
                     except Exception as decodificacao_erro:
+                        # Se não conseguir decodificar o JSON, mostra a resposta real do Google
                         st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico.")
                         with st.expander("Ver resposta técnica"):
                             st.text(resposta_google.text)
