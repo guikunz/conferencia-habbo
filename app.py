@@ -6,12 +6,83 @@ import concurrent.futures
 import time
 import io
 
-# CONFIGURAÇÕES DA PÁGINA (Deve ser a primeira linha do Streamlit)
-st.set_page_config(page_title="Central DIC", page_icon="🕵️‍♂️", layout="wide")
+# CONFIGURAÇÕES DA PÁGINA
+st.set_page_config(page_title="Central DIC", page_icon="🛡️", layout="wide")
+
+# ==========================================
+# --- INJEÇÃO DE CSS (O SEGREDO DO VISUAL) ---
+# ==========================================
+st.markdown("""
+<style>
+    /* Estilizando o fundo para um tom muito escuro (quase preto) */
+    .stApp {
+        background-color: #0b090a;
+        color: #e0e0e0;
+    }
+    
+    /* Títulos em Dourado e com fonte impactante */
+    h1, h2, h3, h4 {
+        color: #eab308 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Estilizando os containers (as caixas em volta dos itens) */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border: 1px solid #423512 !important;
+        background-color: #14110f !important;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+
+    /* Estilizando o botão principal para dourado/preto */
+    .stButton > button {
+        background-color: #1a0f00 !important;
+        color: #eab308 !important;
+        border: 1px solid #ca8a04 !important;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .stButton > button:hover {
+        background-color: #eab308 !important;
+        color: #0b090a !important;
+        border: 1px solid #eab308 !important;
+    }
+
+    /* Estilizando métricas (cartões de resumo) */
+    [data-testid="stMetricValue"] {
+        color: #ffffff !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #a8a29e !important;
+        font-weight: bold;
+    }
+
+    /* Estilizando as caixas de texto e seleção */
+    .stTextArea textarea, div[data-baseweb="select"] > div {
+        background-color: #1c1917 !important;
+        color: #ffffff !important;
+        border: 1px solid #444 !important;
+        border-radius: 8px;
+    }
+    
+    /* Header estilizado imitando a imagem */
+    .custom-header {
+        background: linear-gradient(90deg, #1a1100 0%, #0b090a 100%);
+        border: 1px solid #ca8a04;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0px 0px 20px rgba(202, 138, 4, 0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
-# LISTAS DE FILTRO
 PALAVRAS_PROIBIDAS = [
     "exército", "dme", "rcc", "csi", "dph", 
     "marinha", "swat", "pmhh", "rhc", "dpe", "pho", "ex.br"
@@ -25,8 +96,7 @@ URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbz--5QLXcgj14H3JQi
 
 def verificar_nick(nick, categoria):
     nick = str(nick).strip()
-    if not nick:
-        return None
+    if not nick: return None
     
     resultado = {
         "nick": nick, "inexistente": False, "inapropriado": False,
@@ -36,8 +106,7 @@ def verificar_nick(nick, categoria):
         "outra_org": None, "sem_requisitos": False
     }
 
-    if any(p in nick.lower() for p in PALAVRAS_INAPROPRIADAS):
-        resultado["inapropriado"] = True
+    if any(p in nick.lower() for p in PALAVRAS_INAPROPRIADAS): resultado["inapropriado"] = True
 
     data = None
     sucesso_usuario = False
@@ -46,30 +115,20 @@ def verificar_nick(nick, categoria):
         try:
             r = requests.get(URL_USER + nick, timeout=10)
             if r.status_code == 200:
-                data = r.json()
-                sucesso_usuario = True
-                break
-            elif r.status_code == 429:
-                time.sleep(2.5)
-                continue
-            elif r.status_code == 404:
-                break
-            else:
-                break
-        except requests.RequestException:
-            time.sleep(2)
-            continue
+                data = r.json(); sucesso_usuario = True; break
+            elif r.status_code == 429: time.sleep(2.5); continue
+            elif r.status_code == 404: break
+            else: break
+        except requests.RequestException: time.sleep(2); continue
 
     if not sucesso_usuario or not data:
         resultado["inexistente"] = True
         return resultado
 
-    if not data.get("profileVisible", True):
-        resultado["visibilidade_off"] = True
+    if not data.get("profileVisible", True): resultado["visibilidade_off"] = True
 
     last_access = data.get("lastAccessTime")
-    if not last_access:
-        resultado["modo_offline"] = True
+    if not last_access: resultado["modo_offline"] = True
     else:
         try:
             data_api = datetime.fromisoformat(last_access.replace('+0000', '+00:00'))
@@ -84,8 +143,7 @@ def verificar_nick(nick, categoria):
             elif categoria == "Cargos Executivos":
                 if 60 <= dias < 90: resultado["ausente_60_mais"] = f"{nick} ({dias} dias)"
                 elif dias >= 90: resultado["ausente_90_mais"] = f"{nick} ({dias} dias)"
-        except ValueError:
-            pass 
+        except ValueError: pass 
 
     unique_id = data.get("uniqueId")
     grupos_identificados = []
@@ -101,11 +159,9 @@ def verificar_nick(nick, categoria):
                         
                         is_dic_dept = False
                         if categoria in ["Aspirantes a Coronéis", "Cargos Executivos"]:
-                            if nome_l.startswith("[dic]"):
-                                is_dic_dept = True
+                            if nome_l.startswith("[dic]"): is_dic_dept = True
                                 
-                        if categoria == "Aspirantes a Coronéis" and "[csi] corredor" in nome_l:
-                            is_dic_dept = True
+                        if categoria == "Aspirantes a Coronéis" and "[csi] corredor" in nome_l: is_dic_dept = True
                                 
                         if not is_dic_dept:
                             if not resultado["outra_org"] and any(p in nome_l or p in desc_l for p in PALAVRAS_PROIBIDAS):
@@ -120,91 +176,76 @@ def verificar_nick(nick, categoria):
     motto = data.get("motto", "").lower()
     
     if categoria == "Soldados":
-        if not any("polícia dic" in g for g in grupos_identificados) and "[dic]" not in motto:
-            resultado["sem_requisitos"] = True
-            
+        if not any("polícia dic" in g for g in grupos_identificados) and "[dic]" not in motto: resultado["sem_requisitos"] = True
     elif categoria in ["Cabos a Subtenentes", "Aspirantes a Coronéis"]:
         check_grupos = ["[dic] praças", "[dic] oficiais", "[dic] oficiais superiores"]
-        if not any(req in g for g in grupos_identificados for req in check_grupos):
-            resultado["sem_requisitos"] = True
-            
+        if not any(req in g for g in grupos_identificados for req in check_grupos): resultado["sem_requisitos"] = True
     elif categoria == "Cargos Executivos":
         check_exec = ["[dic] corpo exec. superior", "[dic] corpo executivo"]
-        if not any(req in g for g in grupos_identificados for req in check_exec):
-            resultado["sem_requisitos"] = True
+        if not any(req in g for g in grupos_identificados for req in check_exec): resultado["sem_requisitos"] = True
 
     return resultado
 
 # FUNÇÕES DE FORMATAÇÃO
-def formatar_padrao(lista):
-    return "\n\n".join([f"Nick: {n}\nPrint: " for n in lista]) if lista else "Nenhum irregular nesta categoria."
-
+def formatar_padrao(lista): return "\n\n".join([f"Nick: {n}\nPrint: " for n in lista]) if lista else "Nenhum irregular nesta categoria."
 def formatar_ausentes(lista):
     if not lista: return "Nenhum irregular nesta categoria."
     return "\n\n".join([f"Nick: {i.split(' (')[0]}\nQuantidade de dias ausente: {i.split('(')[1].replace(' dias)', '')}\nPrint: " for i in lista])
-
 def formatar_orgs(orgs_list):
     if not orgs_list: return "Nenhum irregular nesta categoria."
     texto_final = []
     for item in orgs_list:
         if " → " in item:
-            nick = item.split(" → ")[0]
-            grupo = item.split(" → ")[1]
+            nick = item.split(" → ")[0]; grupo = item.split(" → ")[1]
             texto_final.append(f"Nick: {nick}\nGrupo policial que possui: {grupo}\nPrint: ")
-        else:
-            texto_final.append(f"Nick: {item}\nGrupo policial que possui: ?\nPrint: ")
+        else: texto_final.append(f"Nick: {item}\nGrupo policial que possui: ?\nPrint: ")
     return "\n\n".join(texto_final)
-
 def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 
 
 # ==========================================
-# --- NOVA INTERFACE VISUAL (DASHBOARD) ---
+# --- INTERFACE VISUAL PRINCIPAL ---
 # ==========================================
 
-# 1. CABEÇALHO DO SISTEMA
+# 1. CABEÇALHO DO SISTEMA CUSTOMIZADO
 st.markdown("""
-    <div style='text-align: center; margin-bottom: 2rem;'>
-        <h1>🕵️‍♂️ Central de Conferência DIC</h1>
-        <p style='color: gray; font-size: 1.1rem;'>Sistema automatizado de verificação de atividade e requisitos de grupo.</p>
+    <div class='custom-header'>
+        <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL</h1>
+        <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência Oficial</p>
     </div>
 """, unsafe_allow_html=True)
 
-# 2. CAIXA DE CONFIGURAÇÃO (Inputs)
+# 2. CAIXA DE CONFIGURAÇÃO E DADOS
 with st.container(border=True):
     col_input1, col_input2 = st.columns([1, 2], gap="large") 
     
     with col_input1:
-        st.subheader("⚙️ Configuração")
+        st.subheader("🕵️ CONSULTA INDIVIDUAL")
         categoria_sel = st.selectbox(
-            "Selecione a patente para conferência:", 
+            "Selecione uma categoria de patente:", 
             ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"],
-            help="As regras de ausência e grupos mudam conforme a categoria escolhida."
+            label_visibility="collapsed"
         )
-        st.write("---")
-        
-        # Botão colocado aqui para ficar perto das configurações
-        iniciar_btn = st.button(f"🚀 Iniciar Verificação", type="primary", use_container_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        iniciar_btn = st.button(f"🔎 Iniciar Verificação", type="primary", use_container_width=True)
 
     with col_input2:
-        st.subheader("📋 Dados da Planilha")
+        st.subheader("📋 DADOS DO SISTEMA")
         dados_colados = st.text_area(
-            "Copie as linhas da sua planilha do Sheets e cole abaixo:", 
-            height=150, 
+            "Copie as linhas da sua planilha e cole abaixo:", 
+            height=130, 
             label_visibility="collapsed", 
-            placeholder="Cole aqui as colunas (ex: linha 1, linha 2...)"
+            placeholder="Cole os dados aqui..."
         )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 3. LÓGICA DE PROCESSAMENTO E RESULTADOS
+# 3. LÓGICA DE PROCESSAMENTO
 if iniciar_btn:
     if not dados_colados.strip():
-        st.warning("⚠️ Por favor, cole os dados da planilha na caixa acima antes de iniciar.")
+        st.warning("⚠️ O banco de dados está vazio. Por favor, cole os dados da planilha antes de iniciar.")
     else:
-        # Mostra o status global de progresso
-        with st.status("Executando varredura no Habbo API...", expanded=True) as status:
-            st.write("Lendo dados copiados...")
+        with st.status("Processando dados de inteligência...", expanded=True) as status:
             try:
                 df = pd.read_csv(io.StringIO(dados_colados), sep='\t', header=None)
                 indice_coluna_nick = 2 if df.shape[1] >= 3 else 0
@@ -212,12 +253,11 @@ if iniciar_btn:
                 nicks = [n.strip() for n in nicks if n.strip() and str(n).lower() != 'nan']
                 total_lidos = len(nicks)
                 
-                st.write(f"Conectando à API para verificar {total_lidos} usuários...")
+                st.write(f"Estabelecendo conexão segura para {total_lidos} alvos...")
                 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                     resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
 
-                st.write("Filtrando resultados e montando relatório...")
                 aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap = [], [], [], [], [], [], [], [], [], [], []
 
                 for r in resultados:
@@ -239,7 +279,6 @@ if iniciar_btn:
                 fuso_br = timezone(timedelta(hours=-3))
                 data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
                 
-                # Matemática para o Dashboard
                 total_ausentes = len(aus_p) + len(aus_7) + len(aus_20) + len(aus_60) + len(aus_90)
                 total_irregulares = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
 
@@ -249,7 +288,7 @@ if iniciar_btn:
                 relatorio += f"\n\nRetiraram-se dos grupos: {listar(sem_req)}"
 
                 st.session_state.relatorio_texto = relatorio
-                st.session_state.df_view = df # Salva a tabela na sessão
+                st.session_state.df_view = df 
                 st.session_state.dados_google = {
                     "categoria": categoria_sel, "data_hoje": data_hoje, "total": str(total_irregulares),
                     "qtd_ausentes_padrao": str(len(aus_p)), "lista_ausentes_padrao": formatar_ausentes(aus_p),
@@ -265,7 +304,6 @@ if iniciar_btn:
                     "qtd_inapropriado": str(len(inap)), "lista_inapropriado": formatar_padrao(inap)
                 }
                 
-                # Salva dados extras para exibir no dashboard
                 st.session_state.metricas = {"lidos": total_lidos, "irregulares": total_irregulares, "ausentes": total_ausentes}
                 st.session_state.gerado = True
                 status.update(label="Verificação concluída com sucesso!", state="complete", expanded=False)
@@ -274,40 +312,35 @@ if iniciar_btn:
                 status.update(label="Erro no processamento", state="error", expanded=True)
                 st.error(f"Detalhe do erro: {e}")
 
-# 4. EXIBIÇÃO DOS DADOS (Visão Lado a Lado)
+# 4. EXIBIÇÃO DOS RESULTADOS LADO A LADO
 if 'gerado' in st.session_state and st.session_state.gerado:
     st.markdown("---")
     
-    # 4.1 Dashboard de Métricas
     col_met1, col_met2, col_met3 = st.columns(3)
-    col_met1.metric(label="👥 Nicks Lidos", value=st.session_state.metricas["lidos"])
-    col_met2.metric(label="⚠️ Total de Irregulares", value=st.session_state.metricas["irregulares"], delta="Atenção" if st.session_state.metricas["irregulares"] > 0 else "Limpo", delta_color="inverse")
-    col_met3.metric(label="😴 Total de Ausentes", value=st.session_state.metricas["ausentes"])
+    col_met1.metric(label="👥 ALVOS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
+    col_met2.metric(label="⚠️ AVISOS DE IRREGULARIDADE", value=st.session_state.metricas["irregulares"])
+    col_met3.metric(label="😴 POLICIAIS AUSENTES", value=st.session_state.metricas["ausentes"])
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 4.2 Lado a Lado: Tabela e Relatório
     col_view_esq, col_view_dir = st.columns([1, 1.2], gap="medium")
     
     with col_view_esq:
-        st.subheader("📊 Visualização de Dados")
-        st.caption("Esta é a tabela lida a partir dos dados que você colou.")
-        st.dataframe(st.session_state.df_view, use_container_width=True, height=400)
+        st.subheader("📑 REGISTROS ANALISADOS")
+        st.dataframe(st.session_state.df_view, use_container_width=True, height=350)
         
     with col_view_dir:
-        st.subheader("📝 Relatório Rápido")
-        st.text_area("Resultado gerado em texto", st.session_state.relatorio_texto, height=310, label_visibility="collapsed")
+        st.subheader("📝 CONSOLIDAÇÃO DOS DADOS")
+        st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
         
-        # Botão final do Google Docs
-        st.markdown("#### Exportar Relatório")
-        if st.button("Gerar Relatório Final no Google Docs 📄", type="primary", use_container_width=True):
-            with st.spinner("Conectando ao Google Drive..."):
+        if st.button("GERAR DOCUMENTO OFICIAL 📄", type="primary", use_container_width=True):
+            with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
                 try:
                     res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
                     if res.get("status") == "sucesso": 
-                        st.success("✅ Relatório gerado e salvo na sua pasta do Drive!")
-                        st.markdown(f"### 🔗 **[CLIQUE AQUI PARA ABRIR O SEU DOCUMENTO]({res.get('url')})**")
+                        st.success("✅ Documento gerado, carimbado e arquivado!")
+                        st.markdown(f"### 🔗 **[ACESSAR DOCUMENTO OFICIAL AQUI]({res.get('url')})**")
                     else:
-                        st.error(f"Erro no Google: {res.get('mensagem')}")
+                        st.error(f"Falha na comunicação: {res.get('mensagem')}")
                 except Exception as e:
-                    st.error(f"Erro de conexão com o Google: {e}")
+                    st.error(f"Erro de conexão com a base de dados: {e}")
