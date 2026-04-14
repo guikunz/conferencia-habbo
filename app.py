@@ -220,7 +220,7 @@ with st.container(border=True):
     col_esq, col_dir = st.columns([2, 1], gap="large") 
     
     with col_esq:
-        st.subheader("📋 DADOS DO SISTEMA")
+        st.subheader("📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO")
         dados_colados = st.text_area(
             "Copie as linhas da sua planilha e cole abaixo:", 
             height=130, 
@@ -229,7 +229,7 @@ with st.container(border=True):
         )
 
     with col_dir:
-        st.subheader("🕵️ CONSULTA INDIVIDUAL")
+        st.subheader("🕵️ CONSULTA POR GRADUAÇÃO")
         categoria_sel = st.selectbox(
             "Selecione uma categoria de patente:", 
             ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"],
@@ -253,7 +253,7 @@ if iniciar_btn:
                 nicks = [n.strip() for n in nicks if n.strip() and str(n).lower() != 'nan']
                 total_lidos = len(nicks)
                 
-                st.write(f"Estabelecendo conexão segura para {total_lidos} alvos...")
+                st.write(f"Estabelecendo conexão segura para {total_lidos} policiais...")
                 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                     resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
@@ -318,7 +318,7 @@ if 'gerado' in st.session_state and st.session_state.gerado:
     st.markdown("---")
     
     col_met1, col_met2, col_met3 = st.columns(3)
-    col_met1.metric(label="👥 ALVOS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
+    col_met1.metric(label="👥 POLICIAIS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
     col_met2.metric(label="⚠️ AVISOS DE IRREGULARIDADE", value=st.session_state.metricas["irregulares"])
     col_met3.metric(label="😴 POLICIAIS AUSENTES", value=st.session_state.metricas["ausentes"])
 
@@ -334,13 +334,13 @@ if 'gerado' in st.session_state and st.session_state.gerado:
         st.subheader("📝 CONSOLIDAÇÃO DOS DADOS")
         st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
         
-        if st.button("GERAR DOCUMENTO OFICIAL 📄", type="primary", use_container_width=True):
+        if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
             with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
                 try:
                     res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
                     if res.get("status") == "sucesso": 
                         st.success("✅ Documento gerado, carimbado e arquivado!")
-                        st.markdown(f"### 🔗 **[ACESSAR DOCUMENTO OFICIAL AQUI]({res.get('url')})**")
+                        st.markdown(f"### 🔗 **[ACESSAR O RELATÓRIO OFICIAL AQUI]({res.get('url')})**")
                     else:
                         st.error(f"Falha na comunicação: {res.get('mensagem')}")
                 except Exception as e:
