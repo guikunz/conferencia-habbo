@@ -7,7 +7,7 @@ import time
 import io
 
 # CONFIGURAÇÕES DA PÁGINA
-st.set_page_config(page_title="Central DIC", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Central DIC", page_icon="🕵️", layout="wide")
 
 # ==========================================
 # --- INJEÇÃO DE CSS (O SEGREDO DO VISUAL) ---
@@ -283,9 +283,10 @@ if iniciar_btn:
                 total_irregulares = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
 
                 relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total_irregulares}\n"
-                relatorio += f"\nAusentes: {listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
-                relatorio += f"\n\nOutras Orgs: {listar(orgs)}"
-                relatorio += f"\n\nRetiraram-se dos grupos: {listar(sem_req)}"
+                # Adicionando a quebra de linha após os rótulos
+                relatorio += f"\nAusentes:\n{listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
+                relatorio += f"\n\nOutras Orgs:\n{listar(orgs)}"
+                relatorio += f"\n\nRetiraram-se dos grupos:\n{listar(sem_req)}"
 
                 st.session_state.relatorio_texto = relatorio
                 st.session_state.df_view = df 
