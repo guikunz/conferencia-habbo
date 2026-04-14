@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, timezone, timedelta
 import concurrent.futures
 import time
+import io
 
 # CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Conferência Habbo", page_icon="🕵️‍♂️", layout="wide")
@@ -20,7 +21,7 @@ PALAVRAS_INAPROPRIADAS = [
     "vagina", "xota", "cu", "fdp", "porra", "caralho"
 ]
 
-URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbwPuO6ZV1x2hQ8myqIyj5OYQDuFKwNNwMHtYQ9Y-7G44tT0YfZgCYyhr67ICO03tUGJSQ/exec"
+URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbz--5QLXcgj14H3JQidJ17A7orRrIDoBmDApdDMHUVO9gy1z7KzV1K7A_Fs496IIfzV/exec"
 
 def verificar_nick(nick, categoria):
     nick = str(nick).strip()
@@ -168,68 +169,87 @@ with col1:
         ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"]
     )
 
-SHEET_ID = "1XfJmLoTi9kbhYx9pRlpvVRX1EF6o2OB-_GXPDAC1TcY"
-url_excel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
+st.write("Copie as linhas da sua planilha (exatamente como selecionado no Sheets) e cole abaixo:")
+dados_colados = st.text_area("Dados da Planilha", height=200, label_visibility="collapsed", placeholder="Cole aqui as colunas...")
 
 if st.button(f"Iniciar Verificação: {categoria_sel}", type="primary"):
-    with st.spinner('Puxando dados da planilha e verificando nicks...'):
-        try:
-            df = pd.read_excel(url_excel, sheet_name="INICIO")
-            nicks = df.iloc[1:, 1].dropna().tolist()
-            
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
-
-            aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap = [], [], [], [], [], [], [], [], [], [], []
-
-            for r in resultados:
-                if not r: continue
-                n = r["nick"]
+    if not dados_colados.strip():
+        st.warning("Por favor, cole os dados da planilha na caixa acima antes de iniciar.")
+    else:
+        with st.spinner('Montando tabela e verificando nicks...'):
+            try:
+                # 1. Lê o texto colado como se fosse um arquivo de Excel (separado por TAB)
+                df = pd.read_csv(io.StringIO(dados_colados), sep='\t', header=None)
                 
-                if r["inexistente"]: inex.append(n); continue
-                if r["inapropriado"]: inap.append(n); continue
+                # Exibe a tabela na tela para ficar visual
+                st.markdown("### 📊 Tabela de Dados Lidos")
+                st.dataframe(df, use_container_width=True)
+                
+                # 2. Lógica inteligente para pegar a Coluna C
+                # Se o usuário copiou da coluna A até a E (5 colunas), a Coluna C é o índice 2.
+                # Se ele copiou só os nicks, será o índice 0. O código se adapta automaticamente!
+                indice_coluna_nick = 2 if df.shape[1] >= 3 else 0
+                
+                nicks = df.iloc[:, indice_coluna_nick].dropna().astype(str).tolist()
+                
+                # Limpa nicks inválidos (como linhas em branco ou valores "nan")
+                nicks = [n.strip() for n in nicks if n.strip() and str(n).lower() != 'nan']
+                st.info(f"O script encontrou {len(nicks)} nicks válidos na Coluna C (ou principal).")
+                
+                with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                    resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
+
+                aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap = [], [], [], [], [], [], [], [], [], [], []
+
+                for r in resultados:
+                    if not r: continue
+                    n = r["nick"]
                     
-                if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"]); continue
-                if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"]); continue
-                if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"]); continue
-                if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"]); continue
-                if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"]); continue
-                    
-                if r["outra_org"]: orgs.append(r["outra_org"]); continue
-                if r["modo_offline"]: off.append(n); continue
-                if r["sem_requisitos"]: sem_req.append(n); continue
-                if r["visibilidade_off"]: vis.append(n); continue
+                    if r["inexistente"]: inex.append(n); continue
+                    if r["inapropriado"]: inap.append(n); continue
+                        
+                    if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"]); continue
+                    if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"]); continue
+                    if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"]); continue
+                    if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"]); continue
+                    if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"]); continue
+                        
+                    if r["outra_org"]: orgs.append(r["outra_org"]); continue
+                    if r["modo_offline"]: off.append(n); continue
+                    if r["sem_requisitos"]: sem_req.append(n); continue
+                    if r["visibilidade_off"]: vis.append(n); continue
 
-            fuso_br = timezone(timedelta(hours=-3))
-            data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
-            total = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
+                fuso_br = timezone(timedelta(hours=-3))
+                data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
+                total = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
 
-            relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total}\n"
-            relatorio += f"\nAusentes: {listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
-            relatorio += f"\n\nOutras Orgs: {listar(orgs)}"
-            relatorio += f"\n\nRetiraram-se dos grupos: {listar(sem_req)}"
+                relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total}\n"
+                relatorio += f"\nAusentes: {listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
+                relatorio += f"\n\nOutras Orgs: {listar(orgs)}"
+                relatorio += f"\n\nRetiraram-se dos grupos: {listar(sem_req)}"
 
-            st.session_state.relatorio_texto = relatorio
-            st.session_state.dados_google = {
-                "categoria": categoria_sel, "data_hoje": data_hoje, "total": str(total),
-                "qtd_ausentes_padrao": str(len(aus_p)), "lista_ausentes_padrao": formatar_ausentes(aus_p),
-                "qtd_aus_7_19": str(len(aus_7)), "lista_aus_7_19": formatar_ausentes(aus_7),
-                "qtd_aus_20_mais": str(len(aus_20)), "lista_aus_20_mais": formatar_ausentes(aus_20),
-                "qtd_aus_60_mais": str(len(aus_60)), "lista_aus_60_mais": formatar_ausentes(aus_60),
-                "qtd_aus_90_mais": str(len(aus_90)), "lista_aus_90_mais": formatar_ausentes(aus_90),
-                "qtd_orgs": str(len(orgs)), "lista_orgs": formatar_orgs(orgs),
-                "qtd_offline": str(len(off)), "lista_offline": formatar_padrao(off),
-                "qtd_sem_req": str(len(sem_req)), "lista_sem_req": formatar_padrao(sem_req),
-                "qtd_visibilidade": str(len(vis)), "lista_visibilidade": formatar_padrao(vis),
-                "qtd_inexistente": str(len(inex)), "lista_inexistente": formatar_padrao(inex),
-                "qtd_inapropriado": str(len(inap)), "lista_inapropriado": formatar_padrao(inap)
-            }
-            st.session_state.gerado = True
+                st.session_state.relatorio_texto = relatorio
+                st.session_state.dados_google = {
+                    "categoria": categoria_sel, "data_hoje": data_hoje, "total": str(total),
+                    "qtd_ausentes_padrao": str(len(aus_p)), "lista_ausentes_padrao": formatar_ausentes(aus_p),
+                    "qtd_aus_7_19": str(len(aus_7)), "lista_aus_7_19": formatar_ausentes(aus_7),
+                    "qtd_aus_20_mais": str(len(aus_20)), "lista_aus_20_mais": formatar_ausentes(aus_20),
+                    "qtd_aus_60_mais": str(len(aus_60)), "lista_aus_60_mais": formatar_ausentes(aus_60),
+                    "qtd_aus_90_mais": str(len(aus_90)), "lista_aus_90_mais": formatar_ausentes(aus_90),
+                    "qtd_orgs": str(len(orgs)), "lista_orgs": formatar_orgs(orgs),
+                    "qtd_offline": str(len(off)), "lista_offline": formatar_padrao(off),
+                    "qtd_sem_req": str(len(sem_req)), "lista_sem_req": formatar_padrao(sem_req),
+                    "qtd_visibilidade": str(len(vis)), "lista_visibilidade": formatar_padrao(vis),
+                    "qtd_inexistente": str(len(inex)), "lista_inexistente": formatar_padrao(inex),
+                    "qtd_inapropriado": str(len(inap)), "lista_inapropriado": formatar_padrao(inap)
+                }
+                st.session_state.gerado = True
 
-        except Exception as e: st.error(f"Erro: {e}")
+            except Exception as e: 
+                st.error(f"Erro ao processar os dados: {e}. Verifique se você copiou os dados corretamente da planilha.")
 
 if 'gerado' in st.session_state:
-    st.text_area("Relatório:", st.session_state.relatorio_texto, height=300)
+    st.text_area("Relatório Rápido:", st.session_state.relatorio_texto, height=300)
     
     if st.button("Gerar no Google Docs 📄", type="secondary"):
         with st.spinner("Gerando relatório no Google Docs..."):
@@ -241,4 +261,4 @@ if 'gerado' in st.session_state:
                 else:
                     st.error(f"Erro no Google: {res.get('mensagem')}")
             except Exception as e:
-                st.error(f"Erro de comunicação: {e}")
+                st.error(f"Erro de conexão com o Google: {e}")
