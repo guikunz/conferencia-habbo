@@ -337,11 +337,24 @@ if 'gerado' in st.session_state and st.session_state.gerado:
         if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
             with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
                 try:
-                    res = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google).json()
-                    if res.get("status") == "sucesso": 
-                        st.success("✅ Documento gerado, carimbado e arquivado!")
-                        st.markdown(f"### 🔗 **[ACESSAR O RELATÓRIO OFICIAL AQUI]({res.get('url')})**")
-                    else:
-                        st.error(f"Falha na comunicação: {res.get('mensagem')}")
+                    # Faz o envio dos dados
+                    resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
+                    
+                    # Tenta decodificar a resposta
+                    try:
+                        res = resposta_google.json()
+                        if res.get("status") == "sucesso": 
+                            st.success("✅ Documento gerado, carimbado e arquivado!")
+                            st.markdown(f"### 🔗 **[ACESSAR O RELATÓRIO OFICIAL AQUI]({res.get('url')})**")
+                        else:
+                            st.error(f"Falha na comunicação: {res.get('mensagem')}")
+                            
+                    except Exception as decodificacao_erro:
+                        # Se não conseguir decodificar o JSON, mostra a resposta real do Google
+                        st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico no Apps Script.")
+                        st.info("Verifique se em 'Gerenciar Implantações' a opção 'Quem tem acesso' está como 'Qualquer pessoa'.")
+                        with st.expander("Ver resposta técnica do Google (Para diagnóstico)"):
+                            st.text(resposta_google.text) # Mostra o texto bruto devolvido pelo Google
+                            
                 except Exception as e:
                     st.error(f"Erro de conexão com a base de dados: {e}")
