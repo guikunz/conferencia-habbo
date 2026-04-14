@@ -7,7 +7,7 @@ import time
 import io
 
 # CONFIGURAÇÕES DA PÁGINA
-st.set_page_config(page_title="Central DIC", page_icon="🕵️", layout="wide")
+st.set_page_config(page_title="Central de conferências DIC/Sp", page_icon="🕵️", layout="wide")
 
 st.markdown("""
 <style>
