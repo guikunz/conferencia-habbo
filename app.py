@@ -9,9 +9,6 @@ import io
 # CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Central DIC", page_icon="🕵️", layout="wide")
 
-# ==========================================
-# --- INJEÇÃO DE CSS (O SEGREDO DO VISUAL) ---
-# ==========================================
 st.markdown("""
 <style>
     /* Estilizando o fundo para um tom muito escuro (quase preto) */
