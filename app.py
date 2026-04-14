@@ -259,7 +259,8 @@ st.markdown("""
 
 # 2. CAIXA DE CONFIGURAÇÃO E DADOS
 with st.container(border=True):
-    col_esq, col_dir = st.columns([2, 1], gap="large") 
+    # AQUI ESTÁ A MUDANÇA: [1, 1.2] dá um pouco mais de espaço para o lado direito
+    col_esq, col_dir = st.columns([1, 1.2], gap="large") 
     
     with col_esq:
         st.markdown("<div class='section-title'>📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO</div>", unsafe_allow_html=True)
@@ -378,10 +379,8 @@ if 'gerado' in st.session_state and st.session_state.gerado:
         if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
             with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
                 try:
-                    # Faz o envio dos dados
                     resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
                     
-                    # Tenta decodificar a resposta
                     try:
                         res = resposta_google.json()
                         if res.get("status") == "sucesso": 
@@ -399,7 +398,6 @@ if 'gerado' in st.session_state and st.session_state.gerado:
                             st.error(f"Falha na comunicação: {res.get('mensagem')}")
                             
                     except Exception as decodificacao_erro:
-                        # Se não conseguir decodificar o JSON, mostra a resposta real do Google
                         st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico.")
                         with st.expander("Ver resposta técnica"):
                             st.text(resposta_google.text)
