@@ -234,7 +234,7 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 st.markdown("""
     <div class='custom-header'>
         <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL - Supervidores</h1>
-        <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de cargos dos Supervidores</p>
+        <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de graduação, patentes e cargos</p>
     </div>
 """, unsafe_allow_html=True)
 
