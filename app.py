@@ -217,9 +217,18 @@ st.markdown("""
 
 # 2. CAIXA DE CONFIGURAÇÃO E DADOS
 with st.container(border=True):
-    col_input1, col_input2 = st.columns([1, 2], gap="large") 
+    col_esq, col_dir = st.columns([2, 1], gap="large") 
     
-    with col_input1:
+    with col_esq:
+        st.subheader("📋 DADOS DO SISTEMA")
+        dados_colados = st.text_area(
+            "Copie as linhas da sua planilha e cole abaixo:", 
+            height=130, 
+            label_visibility="collapsed", 
+            placeholder="Cole os dados aqui..."
+        )
+
+    with col_dir:
         st.subheader("🕵️ CONSULTA INDIVIDUAL")
         categoria_sel = st.selectbox(
             "Selecione uma categoria de patente:", 
@@ -228,15 +237,6 @@ with st.container(border=True):
         )
         st.markdown("<br>", unsafe_allow_html=True)
         iniciar_btn = st.button(f"🔎 Iniciar Verificação", type="primary", use_container_width=True)
-
-    with col_input2:
-        st.subheader("📋 DADOS DO SISTEMA")
-        dados_colados = st.text_area(
-            "Copie as linhas da sua planilha e cole abaixo:", 
-            height=130, 
-            label_visibility="collapsed", 
-            placeholder="Cole os dados aqui..."
-        )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
