@@ -43,11 +43,37 @@ st.markdown("""
         border-radius: 8px;
         font-weight: bold;
         transition: 0.3s;
+        text-transform: uppercase;
     }
     .stButton > button:hover {
         background-color: #eab308 !important;
         color: #0b090a !important;
         border: 1px solid #eab308 !important;
+    }
+
+    /* ESTILIZAÇÃO DO LINK FINAL (Transformando em Botão) */
+    .btn-link-oficial {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #1a0f00;
+        color: #eab308 !important;
+        border: 1px solid #ca8a04;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none !important;
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin-top: 20px;
+        transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .btn-link-oficial:hover {
+        background-color: #eab308;
+        color: #0b090a !important;
+        border: 1px solid #eab308;
+        box-shadow: 0px 0px 15px rgba(234, 179, 8, 0.4);
     }
 
     /* Estilizando métricas (cartões de resumo) */
@@ -84,8 +110,8 @@ st.markdown("""
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
 PALAVRAS_PROIBIDAS = [
-    "exército", "dme", "rcc", "csi", "dph", "pab", 
-    "marinha", "swat", "pmhh", "rhc", "dpe", "pho", "ex.br"
+    "exército", "dme", "rcc", "csi", "dph", "pab", "dpe",
+    "marinha", "swat", "pmhh", "rhc", "pho", "ex.br"
 ]
 PALAVRAS_INAPROPRIADAS = [
     "sexo", "buceta", "piroca", "rola", "pau", "penis", 
@@ -283,7 +309,6 @@ if iniciar_btn:
                 total_irregulares = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
 
                 relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total_irregulares}\n"
-                # Adicionando a quebra de linha após os rótulos
                 relatorio += f"\nAusentes:\n{listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
                 relatorio += f"\n\nOutras Orgs:\n{listar(orgs)}"
                 relatorio += f"\n\nRetiraram-se dos grupos:\n{listar(sem_req)}"
@@ -337,24 +362,28 @@ if 'gerado' in st.session_state and st.session_state.gerado:
         if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
             with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
                 try:
-                    # Faz o envio dos dados
                     resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
                     
-                    # Tenta decodificar a resposta
                     try:
                         res = resposta_google.json()
                         if res.get("status") == "sucesso": 
-                            st.success("✅ Documento gerado, carimbado e arquivado!")
-                            st.markdown(f"### 🔗 **[ACESSAR O RELATÓRIO OFICIAL AQUI]({res.get('url')})**")
+                            st.success("✅ Documento gerado e arquivado!")
+                            
+                            # APLICANDO O BOTÃO ESTILIZADO COM O LINK
+                            url_final = res.get('url')
+                            st.markdown(f"""
+                                <a href='{url_final}' target='_blank' class='btn-link-oficial'>
+                                    🔗 ACESSAR O RELATÓRIO OFICIAL AQUI
+                                </a>
+                            """, unsafe_allow_html=True)
+                            
                         else:
                             st.error(f"Falha na comunicação: {res.get('mensagem')}")
                             
                     except Exception as decodificacao_erro:
-                        # Se não conseguir decodificar o JSON, mostra a resposta real do Google
-                        st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico no Apps Script.")
-                        st.info("Verifique se em 'Gerenciar Implantações' a opção 'Quem tem acesso' está como 'Qualquer pessoa'.")
-                        with st.expander("Ver resposta técnica do Google (Para diagnóstico)"):
-                            st.text(resposta_google.text) # Mostra o texto bruto devolvido pelo Google
+                        st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico.")
+                        with st.expander("Ver resposta técnica"):
+                            st.text(resposta_google.text)
                             
                 except Exception as e:
                     st.error(f"Erro de conexão com a base de dados: {e}")
