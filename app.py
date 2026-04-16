@@ -6,8 +6,12 @@ import concurrent.futures
 import time
 import io
 
-# CONFIGURAÇÕES DA PÁGINA (Sempre a primeira linha)
+# CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Central de conferências DIC/Sp", page_icon="🕵️", layout="wide")
+
+# Inicializa o "Roteador" de páginas na memória do site
+if 'pagina_atual' not in st.session_state:
+    st.session_state.pagina_atual = 'inicio'
 
 # ==========================================
 # --- INJEÇÃO DE CSS (O SEGREDO DO VISUAL) ---
@@ -45,7 +49,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.8);
     }
 
-    /* Estilizando o botão principal para dourado/preto */
+    /* Estilizando os botões principais */
     .stButton > button {
         background-color: #1a0f00 !important;
         color: #eab308 !important;
@@ -119,15 +123,8 @@ st.markdown("""
         margin-bottom: 30px;
         box-shadow: 0px 0px 20px rgba(202, 138, 4, 0.1);
     }
-
-    /* Estilizando a Sidebar (Menu Lateral) */
-    [data-testid="stSidebar"] {
-        background-color: #14110f !important;
-        border-right: 1px solid #423512 !important;
-    }
 </style>
 """, unsafe_allow_html=True)
-
 
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
@@ -252,37 +249,23 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 
 
 # ==========================================
-# --- MENU LATERAL (SIDEBAR) ---
+# CABEÇALHO GLOBAL (Aparece em todas as páginas)
 # ==========================================
-st.sidebar.markdown("<h2 style='text-align: center; color: #eab308;'>🕵️ MENU DIC</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("---")
-
-# Cria a seleção das páginas
-pagina = st.sidebar.radio(
-    "NAVEGAÇÃO DO SISTEMA", 
-    ["Conferência de Patentes", "Guia de Uso"]
-)
-
-st.sidebar.markdown("---")
-st.sidebar.caption("© 2026 DIC - Sistema de Conferência Oficial")
+st.markdown("""
+    <div class='custom-header'>
+        <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL - Supervisores</h1>
+        <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de graduação, patentes e cargos</p>
+    </div>
+""", unsafe_allow_html=True)
 
 
 # ==========================================
-# --- PÁGINA 1: CONFERÊNCIA DE PATENTES ---
+# --- PÁGINA 1: INÍCIO (INSERIR DADOS) ---
 # ==========================================
-if pagina == "Conferência de Patentes":
+if st.session_state.pagina_atual == 'inicio':
 
-    # 1. CABEÇALHO DO SISTEMA CUSTOMIZADO
-    st.markdown("""
-        <div class='custom-header'>
-            <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL - Supervisores</h1>
-            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de graduação, patentes e cargos</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 2. CAIXA DE CONFIGURAÇÃO E DADOS
     with st.container(border=True):
-        col_esq, col_dir = st.columns([1, 1.2], gap="large") 
+        col_esq, col_dir = st.columns([1, 2], gap="large") 
         
         with col_esq:
             st.markdown("<div class='section-title'>📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO</div>", unsafe_allow_html=True)
@@ -305,7 +288,7 @@ if pagina == "Conferência de Patentes":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 3. LÓGICA DE PROCESSAMENTO
+    # A Lógica roda aqui e manda o usuário para a página 2
     if iniciar_btn:
         if not dados_colados.strip():
             st.warning("⚠️ O banco de dados está vazio. Por favor, cole os dados da planilha antes de iniciar.")
@@ -370,89 +353,79 @@ if pagina == "Conferência de Patentes":
                     }
                     
                     st.session_state.metricas = {"lidos": total_lidos, "irregulares": total_irregulares, "ausentes": total_ausentes}
-                    st.session_state.gerado = True
+                    
+                    # Status finalizado. Altera a página e força a recarga da tela
                     status.update(label="Verificação concluída com sucesso!", state="complete", expanded=False)
+                    time.sleep(0.5) # Pausa rápida só para o usuário ver o check verde antes de mudar de tela
+                    
+                    st.session_state.pagina_atual = 'resultados'
+                    st.rerun() # Reinicia o site carregando a Página 2
 
                 except Exception as e: 
                     status.update(label="Erro no processamento", state="error", expanded=True)
                     st.error(f"Detalhe do erro: {e}")
 
-    # 4. EXIBIÇÃO DOS RESULTADOS LADO A LADO
-    if 'gerado' in st.session_state and st.session_state.gerado:
-        st.markdown("---")
-        
-        col_met1, col_met2, col_met3 = st.columns(3)
-        col_met1.metric(label="👥 POLICIAIS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
-        col_met2.metric(label="⚠️ AVISOS DE IRREGULARIDADE", value=st.session_state.metricas["irregulares"])
-        col_met3.metric(label="😴 POLICIAIS AUSENTES", value=st.session_state.metricas["ausentes"])
 
-        st.markdown("<br>", unsafe_allow_html=True)
+# ==========================================
+# --- PÁGINA 2: RESULTADOS ---
+# ==========================================
+elif st.session_state.pagina_atual == 'resultados':
+
+    # Botão de Voltar no topo
+    col_v1, col_v2, col_v3 = st.columns([1, 4, 1])
+    with col_v1:
+        if st.button("⬅️ VOLTAR AO INÍCIO", use_container_width=True):
+            st.session_state.pagina_atual = 'inicio'
+            st.rerun() # Volta para a página 1
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col_met1, col_met2, col_met3 = st.columns(3)
+    col_met1.metric(label="👥 POLICIAIS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
+    col_met2.metric(label="⚠️ AVISOS DE IRREGULARIDADE", value=st.session_state.metricas["irregulares"])
+    col_met3.metric(label="😴 POLICIAIS AUSENTES", value=st.session_state.metricas["ausentes"])
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col_view_esq, col_view_dir = st.columns([1, 1.2], gap="medium")
+    
+    with col_view_esq:
+        st.markdown("<div class='section-title'>📑 REGISTROS ANALISADOS</div>", unsafe_allow_html=True)
+        st.dataframe(st.session_state.df_view, use_container_width=True, height=350)
         
-        col_view_esq, col_view_dir = st.columns([1, 1.2], gap="medium")
+    with col_view_dir:
+        st.markdown("<div class='section-title'>📝 CONSOLIDAÇÃO DOS DADOS</div>", unsafe_allow_html=True)
+        st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
         
-        with col_view_esq:
-            st.markdown("<div class='section-title'>📑 REGISTROS ANALISADOS</div>", unsafe_allow_html=True)
-            st.dataframe(st.session_state.df_view, use_container_width=True, height=350)
-            
-        with col_view_dir:
-            st.markdown("<div class='section-title'>📝 CONSOLIDAÇÃO DOS DADOS</div>", unsafe_allow_html=True)
-            st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
-            
-            if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
-                with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
+        if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
+            with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
+                try:
+                    # Faz o envio dos dados
+                    resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
+                    
+                    # Tenta decodificar a resposta
                     try:
-                        # Faz o envio dos dados
-                        resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
-                        
-                        # Tenta decodificar a resposta
-                        try:
-                            res = resposta_google.json()
-                            if res.get("status") == "sucesso": 
-                                st.success("✅ Documento gerado e arquivado!")
-                                
-                                # APLICANDO O BOTÃO ESTILIZADO COM O LINK
-                                url_final = res.get('url')
-                                st.markdown(f"""
-                                    <a href='{url_final}' target='_blank' class='btn-link-oficial'>
-                                        🔗 ACESSAR O RELATÓRIO OFICIAL AQUI
-                                    </a>
-                                """, unsafe_allow_html=True)
-                                
-                            else:
-                                st.error(f"Falha na comunicação: {res.get('mensagem')}")
-                                
-                        except Exception as decodificacao_erro:
-                            # Se não conseguir decodificar o JSON, mostra a resposta real do Google
-                            st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico no Apps Script.")
-                            st.info("Verifique se em 'Gerenciar Implantações' a opção 'Quem tem acesso' está como 'Qualquer pessoa'.")
-                            with st.expander("Ver resposta técnica do Google (Para diagnóstico)"):
-                                st.text(resposta_google.text) # Mostra o texto bruto devolvido pelo Google
-                                
-                    except Exception as e:
-                        st.error(f"Erro de conexão com a base de dados: {e}")
-
-# ==========================================
-# --- PÁGINA 2: GUIA DE USO ---
-# ==========================================
-elif pagina == "Guia de Uso":
-    st.markdown("""
-        <div class='custom-header'>
-            <h1 style='margin-bottom: 0px;'>CENTRAL DE AJUDA DIC</h1>
-            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Manual do Usuário e Informações do Sistema</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    ### 📌 Como utilizar a Conferência:
-    1. **Copie os Dados:** Abra a sua planilha oficial do Sheets, selecione as células contendo os nicks e copie (Ctrl+C).
-    2. **Cole no Sistema:** Vá para a página "Conferência de Patentes" no menu lateral e cole (Ctrl+V) na caixa de texto da esquerda.
-    3. **Selecione a Categoria:** Escolha a patente que está sendo analisada. O sistema ajusta as regras automaticamente.
-    4. **Inicie a Verificação:** Clique no botão de verificar. O sistema buscará os dados na API do Habbo em tempo real.
-    5. **Gere o Documento:** Analise o resumo na tela e clique em "Gerar Relatório Oficial" para criar o Google Docs formatado.
-    
-    ---
-    ### ⚙️ Regras do Sistema:
-    * **Inativos:** O sistema conta a quantidade de dias baseado no `lastAccessTime` do Habbo.
-    * **Grupos Falsos:** Se o policial tiver grupos como *Marinha, RCC, CSI (exceto corredor), etc*, será listado.
-    * **Requisitos:** Patentes superiores exigem grupos específicos como `[DIC] Oficiais`.
-    """)
+                        res = resposta_google.json()
+                        if res.get("status") == "sucesso": 
+                            st.success("✅ Documento gerado e arquivado!")
+                            
+                            # APLICANDO O BOTÃO ESTILIZADO COM O LINK
+                            url_final = res.get('url')
+                            st.markdown(f"""
+                                <a href='{url_final}' target='_blank' class='btn-link-oficial'>
+                                    🔗 ACESSAR O RELATÓRIO OFICIAL AQUI
+                                </a>
+                            """, unsafe_allow_html=True)
+                            
+                        else:
+                            st.error(f"Falha na comunicação: {res.get('mensagem')}")
+                            
+                    except Exception as decodificacao_erro:
+                        # Se não conseguir decodificar o JSON, mostra a resposta real do Google
+                        st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico no Apps Script.")
+                        st.info("Verifique se em 'Gerenciar Implantações' a opção 'Quem tem acesso' está como 'Qualquer pessoa'.")
+                        with st.expander("Ver resposta técnica do Google (Para diagnóstico)"):
+                            st.text(resposta_google.text)
+                            
+                except Exception as e:
+                    st.error(f"Erro de conexão com a base de dados: {e}")
