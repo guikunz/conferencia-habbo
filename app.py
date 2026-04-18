@@ -309,7 +309,8 @@ with st.sidebar:
     st.markdown("---")
     menu_selecionado = st.radio(
         "Navegação",
-        ["Conferência Oficial", "Ferramenta de Cópia", "Filtro do System"],
+        # Ordem das opções atualizada
+        ["Conferência Oficial", "Filtro do System", "Ferramenta de Cópia"],
         label_visibility="collapsed"
     )
     st.markdown("---")
@@ -486,39 +487,7 @@ if menu_selecionado == "Conferência Oficial":
                         st.error(f"Erro de conexão com a base de dados: {e}")
 
 # ==========================================
-# --- PÁGINA 2: FERRAMENTA DE CÓPIA ---
-# ==========================================
-elif menu_selecionado == "Ferramenta de Cópia":
-    
-    st.markdown("""
-        <div class='custom-header'>
-            <h1 style='margin-bottom: 0px;'>FERRAMENTA DE EXTRAÇÃO</h1>
-            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Utilitário para cópia rápida de dados do System</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-    with st.container(border=True):
-        st.markdown("<div class='section-title'>🚀 COMO INSTALAR E UTILIZAR</div>", unsafe_allow_html=True)
-        
-        st.write("Para agilizar sua conferência, você pode instalar um botão na barra de favoritos do seu navegador. Ele copia e formata todos os nicks da página do System com apenas um clique.")
-        
-        st.markdown("""
-        1. Clique no botão dourado abaixo para acessar a página oficial da ferramenta.
-        2. Na nova página, **arraste o botão indicado** para a barra de favoritos do seu navegador.
-        3. Quando você estiver na tela do System visualizando os policiais, basta **clicar no seu novo favorito**.
-        4. Volte aqui na Central DIC e aperte **Ctrl+V** na caixa de texto. Pronto!
-        """)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("""
-            <a href='https://guikunz.github.io/copiador-nicks/' target='_blank' class='btn-link-oficial'>
-                🔗 ACESSAR PÁGINA DE INSTALAÇÃO DO COPIADOR
-            </a>
-        """, unsafe_allow_html=True)
-
-# ==========================================
-# --- PÁGINA 3: FILTRO DO SYSTEM ---
+# --- PÁGINA 2: FILTRO DO SYSTEM ---
 # ==========================================
 elif menu_selecionado == "Filtro do System":
 
@@ -571,3 +540,36 @@ elif menu_selecionado == "Filtro do System":
             st.markdown("<div class='section-title' style='text-align: center;'>HIERARQUIA PAGA</div><br>", unsafe_allow_html=True)
             for nome_botao, link_url in links_pagas.items():
                 st.markdown(f"<a href='{link_url}' target='_blank' class='btn-filtro'>{nome_botao}</a>", unsafe_allow_html=True)
+
+
+# ==========================================
+# --- PÁGINA 3: FERRAMENTA DE CÓPIA ---
+# ==========================================
+elif menu_selecionado == "Ferramenta de Cópia":
+    
+    st.markdown("""
+        <div class='custom-header'>
+            <h1 style='margin-bottom: 0px;'>FERRAMENTA DE EXTRAÇÃO</h1>
+            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Utilitário para cópia rápida de dados do System</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.markdown("<div class='section-title'>🚀 COMO INSTALAR E UTILIZAR</div>", unsafe_allow_html=True)
+        
+        st.write("Para agilizar sua conferência, você pode instalar um botão na barra de favoritos do seu navegador. Ele copia e formata todos os nicks da página do System com apenas um clique.")
+        
+        st.markdown("""
+        1. Clique no botão dourado abaixo para acessar a página oficial da ferramenta.
+        2. Na nova página, **arraste o botão indicado** para a barra de favoritos do seu navegador.
+        3. Quando você estiver na tela do System visualizando os policiais, basta **clicar no seu novo favorito**.
+        4. Volte aqui na Central DIC e aperte **Ctrl+V** na caixa de texto. Pronto!
+        """)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("""
+            <a href='https://guikunz.github.io/copiador-nicks/' target='_blank' class='btn-link-oficial'>
+                🔗 ACESSAR PÁGINA DE INSTALAÇÃO DO COPIADOR
+            </a>
+        """, unsafe_allow_html=True)
