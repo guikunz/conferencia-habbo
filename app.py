@@ -90,26 +90,30 @@ st.markdown("""
         box-shadow: 0px 0px 15px rgba(234, 179, 8, 0.4);
     }
 
-    /* === BOTÕES AZUIS DO FILTRO SYSTEM (Efeito 3D) === */
+    /* === BOTÕES DO FILTRO SYSTEM (Design Dark & Gold 3D) === */
     .btn-filtro {
         display: block;
         width: 100%;
         text-align: center;
-        background-color: #0288d1;
-        color: #ffffff !important;
+        background-color: #1a0f00;
+        color: #eab308 !important;
+        border: 1px solid #ca8a04;
         padding: 14px 20px;
         border-radius: 8px;
         text-decoration: none !important;
         font-weight: bold;
         font-size: 1.05rem;
         margin-bottom: 18px;
-        box-shadow: 5px 5px 0px #1c1917;
+        box-shadow: 4px 4px 0px #000000; /* Sombra preta dura para o efeito 3D */
         transition: 0.15s ease-in-out;
+        text-transform: uppercase;
     }
     .btn-filtro:hover {
-        transform: translate(4px, 4px);
-        box-shadow: 1px 1px 0px #1c1917;
-        background-color: #0277bd;
+        transform: translate(4px, 4px); /* Botão 'afunda' */
+        box-shadow: 0px 0px 0px #000000; /* Remove a sombra ao afundar */
+        background-color: #eab308;
+        color: #0b090a !important;
+        border: 1px solid #eab308;
     }
 
     /* Estilizando métricas (cartões de resumo) */
@@ -559,11 +563,11 @@ elif menu_selecionado == "Filtro do System":
         col1, col2 = st.columns(2, gap="large")
 
         with col1:
-            st.markdown("<div class='section-title' style='text-align: center;'>🪖 HIERARQUIA MILITAR</div><br>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title' style='text-align: center;'>HIERARQUIA MILITAR</div><br>", unsafe_allow_html=True)
             for nome_botao, link_url in links_militares.items():
                 st.markdown(f"<a href='{link_url}' target='_blank' class='btn-filtro'>{nome_botao}</a>", unsafe_allow_html=True)
 
         with col2:
-            st.markdown("<div class='section-title' style='text-align: center;'>💎 HIERARQUIA PAGA</div><br>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title' style='text-align: center;'>HIERARQUIA PAGA</div><br>", unsafe_allow_html=True)
             for nome_botao, link_url in links_pagas.items():
                 st.markdown(f"<a href='{link_url}' target='_blank' class='btn-filtro'>{nome_botao}</a>", unsafe_allow_html=True)
