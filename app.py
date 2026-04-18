@@ -543,20 +543,20 @@ elif menu_selecionado == "Filtro do System":
     }
 
     links_pagas = {
-        "Sócio": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=1",
-        "Agente": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=2",
-        "Analista": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=3",
-        "Coordenador": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=4",
-        "Promotor": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=5",
-        "Advogado": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=6",
-        "Administrador": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=7",
-        "Delegado": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=8",
-        "Investigador": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=9",
-        "Detetive": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=10",
-        "Supervisor": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=11",
-        "Líder": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=12",
-        "Líder-Executivo": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=13",
-        "Chanceler": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=14"
+        "Sócio": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=1&limite=100",
+        "Agente": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=2&limite=100",
+        "Analista": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=3&limite=100",
+        "Coordenador": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=4&limite=100",
+        "Promotor": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=5&limite=100",
+        "Advogado": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=6&limite=100",
+        "Administrador": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=7&limite=100",
+        "Delegado": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=8&limite=100",
+        "Investigador": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=9&limite=100",
+        "Detetive": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=10&limite=100",
+        "Supervisor": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=11&limite=100",
+        "Líder": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=12&limite=100",
+        "Líder-Executivo": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=13&limite=100",
+        "Chanceler": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=2&patente=14&limite=100"
     }
 
     with st.container(border=True):
