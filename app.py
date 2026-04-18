@@ -90,12 +90,12 @@ st.markdown("""
         box-shadow: 0px 0px 15px rgba(234, 179, 8, 0.4);
     }
 
-    /* === NOVO: BOTÕES AZUIS DO FILTRO SYSTEM (Efeito 3D) === */
+    /* === BOTÕES AZUIS DO FILTRO SYSTEM (Efeito 3D) === */
     .btn-filtro {
         display: block;
         width: 100%;
         text-align: center;
-        background-color: #0288d1; /* Azul da imagem */
+        background-color: #0288d1;
         color: #ffffff !important;
         padding: 14px 20px;
         border-radius: 8px;
@@ -103,11 +103,11 @@ st.markdown("""
         font-weight: bold;
         font-size: 1.05rem;
         margin-bottom: 18px;
-        box-shadow: 5px 5px 0px #1c1917; /* Sombra dura estilo 3D */
+        box-shadow: 5px 5px 0px #1c1917;
         transition: 0.15s ease-in-out;
     }
     .btn-filtro:hover {
-        transform: translate(4px, 4px); /* Botão "afunda" ao passar o mouse */
+        transform: translate(4px, 4px);
         box-shadow: 1px 1px 0px #1c1917;
         background-color: #0277bd;
     }
@@ -129,7 +129,6 @@ st.markdown("""
         border-radius: 8px;
     }
     
-    /* Cor da borda ao focar na caixa de texto ou menu */
     .stTextArea textarea:focus, div[data-baseweb="select"] > div:focus-within {
         border-color: #eab308 !important;
         box-shadow: 0 0 0 1px #eab308 !important;
@@ -146,21 +145,32 @@ st.markdown("""
         box-shadow: 0px 0px 20px rgba(202, 138, 4, 0.1);
     }
     
-    /* Estilizando a Sidebar (Menu Lateral) */
+    /* ==========================================
+       NOVO CSS AGRESSIVO PARA O MENU LATERAL 
+       ========================================== */
     [data-testid="stSidebar"] {
         background-color: #14110f !important;
         border-right: 1px solid #423512 !important;
     }
     
-    /* Forçando a cor dos textos do Menu Lateral para ficarem bem visíveis */
-    [data-testid="stSidebar"] .stRadio p {
+    /* Força TODAS as letras do menu a ficarem brancas */
+    [data-testid="stSidebar"] * {
         color: #ffffff !important;
-        font-size: 1.1rem;
     }
     
-    /* Cor clara para o texto de rodapé no menu lateral */
-    [data-testid="stSidebar"] small, [data-testid="stSidebar"] .stCaptionContainer {
+    /* Devolve a cor dourada apenas para o título do menu */
+    [data-testid="stSidebar"] h2 {
+        color: #eab308 !important;
+    }
+    
+    /* Deixa o rodapé com cor cinza */
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
         color: #a8a29e !important;
+    }
+    
+    /* Transforma a bolinha de seleção do menu em dourada */
+    [data-testid="stSidebar"] div[data-baseweb="radio"] > div {
+        background-color: #eab308 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -291,11 +301,11 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 # --- MENU LATERAL ---
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='text-align: center; color: #eab308;'>🕵️ MENU - Sp</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>🕵️ MENU - Sp</h2>", unsafe_allow_html=True)
     st.markdown("---")
     menu_selecionado = st.radio(
         "Navegação",
-        ["Conferência Oficial", "Ferramenta de Cópia", "Filtro do System"], # <- Nova página adicionada no menu
+        ["Conferência Oficial", "Ferramenta de Cópia", "Filtro do System"],
         label_visibility="collapsed"
     )
     st.markdown("---")
@@ -314,7 +324,6 @@ if menu_selecionado == "Conferência Oficial":
         </div>
     """, unsafe_allow_html=True)
 
-    # Lógica de "Avançar" e "Voltar" dentro da Conferência
     if st.session_state.pagina_atual == 'inicio':
 
         with st.container(border=True):
@@ -504,7 +513,6 @@ elif menu_selecionado == "Ferramenta de Cópia":
             </a>
         """, unsafe_allow_html=True)
 
-
 # ==========================================
 # --- PÁGINA 3: FILTRO DO SYSTEM ---
 # ==========================================
@@ -517,7 +525,6 @@ elif menu_selecionado == "Filtro do System":
         </div>
     """, unsafe_allow_html=True)
 
-    # Dicionários com os links fornecidos
     links_militares = {
         "Soldados": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=1&limite=100",
         "Cabos": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=2&limite=100",
@@ -548,7 +555,6 @@ elif menu_selecionado == "Filtro do System":
         "Chanceler": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=14"
     }
 
-    # Layout de Duas Colunas
     with st.container(border=True):
         col1, col2 = st.columns(2, gap="large")
 
