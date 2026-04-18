@@ -9,7 +9,7 @@ import io
 # CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Central de conferências DIC/Sp", page_icon="🕵️", layout="wide")
 
-# Inicializa o "Roteador" de páginas na memória do site
+# Inicializa o "Roteador" de páginas na memória do site para a aba de conferência
 if 'pagina_atual' not in st.session_state:
     st.session_state.pagina_atual = 'inicio'
 
@@ -122,6 +122,12 @@ st.markdown("""
         text-align: center;
         margin-bottom: 30px;
         box-shadow: 0px 0px 20px rgba(202, 138, 4, 0.1);
+    }
+    
+    /* Estilizando a Sidebar (Menu Lateral) */
+    [data-testid="stSidebar"] {
+        background-color: #14110f !important;
+        border-right: 1px solid #423512 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -249,183 +255,219 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 
 
 # ==========================================
-# CABEÇALHO GLOBAL (Aparece em todas as páginas)
+# --- MENU LATERAL ---
 # ==========================================
-st.markdown("""
-    <div class='custom-header'>
-        <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL - Supervisores</h1>
-        <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de graduação, patentes e cargos</p>
-    </div>
-""", unsafe_allow_html=True)
+with st.sidebar:
+    st.markdown("<h2 style='text-align: center; color: #eab308;'>🕵️ MENU DIC</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    menu_selecionado = st.radio(
+        "Navegação",
+        ["Conferência Oficial", "Ferramenta de Cópia"],
+        label_visibility="collapsed"
+    )
+    st.markdown("---")
+    st.caption("© 2026 DIC - Supervisores")
 
 
 # ==========================================
-# --- PÁGINA 1: INÍCIO (INSERIR DADOS) ---
+# --- PÁGINA 1: CONFERÊNCIA OFICIAL ---
 # ==========================================
-if st.session_state.pagina_atual == 'inicio':
+if menu_selecionado == "Conferência Oficial":
+    
+    st.markdown("""
+        <div class='custom-header'>
+            <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL - Supervisores</h1>
+            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de graduação, patentes e cargos</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Lógica de "Avançar" e "Voltar" dentro da Conferência
+    if st.session_state.pagina_atual == 'inicio':
+
+        with st.container(border=True):
+            col_esq, col_dir = st.columns([1, 2], gap="large") 
+            
+            with col_esq:
+                st.markdown("<div class='section-title'>📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO</div>", unsafe_allow_html=True)
+                dados_colados = st.text_area(
+                    "Copie as linhas da sua planilha e cole abaixo:", 
+                    height=130, 
+                    label_visibility="collapsed", 
+                    placeholder="Cole os dados aqui..."
+                )
+
+            with col_dir:
+                st.markdown("<div class='section-title'>🕵️ CONSULTA POR GRADUAÇÃO</div>", unsafe_allow_html=True)
+                categoria_sel = st.selectbox(
+                    "Selecione uma categoria de patente:", 
+                    ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"],
+                    label_visibility="collapsed"
+                )
+                st.markdown("<br>", unsafe_allow_html=True)
+                iniciar_btn = st.button(f"🔎 INICIAR VERIFICAÇÃO", type="primary", use_container_width=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        if iniciar_btn:
+            if not dados_colados.strip():
+                st.warning("⚠️ O banco de dados está vazio. Por favor, cole os dados da planilha antes de iniciar.")
+            else:
+                with st.status("Processando dados de inteligência...", expanded=True) as status:
+                    try:
+                        df = pd.read_csv(io.StringIO(dados_colados), sep='\t', header=None)
+                        indice_coluna_nick = 2 if df.shape[1] >= 3 else 0
+                        nicks = df.iloc[:, indice_coluna_nick].dropna().astype(str).tolist()
+                        nicks = [n.strip() for n in nicks if n.strip() and str(n).lower() != 'nan']
+                        total_lidos = len(nicks)
+                        
+                        st.write(f"Estabelecendo conexão segura para {total_lidos} policiais...")
+                        
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                            resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
+
+                        aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap = [], [], [], [], [], [], [], [], [], [], []
+
+                        for r in resultados:
+                            if not r: continue
+                            n = r["nick"]
+                            
+                            if r["inexistente"]: inex.append(n); continue
+                            if r["inapropriado"]: inap.append(n); continue
+                            if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"]); continue
+                            if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"]); continue
+                            if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"]); continue
+                            if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"]); continue
+                            if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"]); continue
+                            if r["outra_org"]: orgs.append(r["outra_org"]); continue
+                            if r["modo_offline"]: off.append(n); continue
+                            if r["sem_requisitos"]: sem_req.append(n); continue
+                            if r["visibilidade_off"]: vis.append(n); continue
+
+                        fuso_br = timezone(timedelta(hours=-3))
+                        data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
+                        
+                        total_ausentes = len(aus_p) + len(aus_7) + len(aus_20) + len(aus_60) + len(aus_90)
+                        total_irregulares = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
+
+                        relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total_irregulares}\n"
+                        relatorio += f"\nAusentes:\n{listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
+                        relatorio += f"\n\nOutras Orgs:\n{listar(orgs)}"
+                        relatorio += f"\n\nRetiraram-se dos grupos:\n{listar(sem_req)}"
+
+                        st.session_state.relatorio_texto = relatorio
+                        st.session_state.df_view = df 
+                        st.session_state.dados_google = {
+                            "categoria": categoria_sel, "data_hoje": data_hoje, "total": str(total_irregulares),
+                            "qtd_ausentes_padrao": str(len(aus_p)), "lista_ausentes_padrao": formatar_ausentes(aus_p),
+                            "qtd_aus_7_19": str(len(aus_7)), "lista_aus_7_19": formatar_ausentes(aus_7),
+                            "qtd_aus_20_mais": str(len(aus_20)), "lista_aus_20_mais": formatar_ausentes(aus_20),
+                            "qtd_aus_60_mais": str(len(aus_60)), "lista_aus_60_mais": formatar_ausentes(aus_60),
+                            "qtd_aus_90_mais": str(len(aus_90)), "lista_aus_90_mais": formatar_ausentes(aus_90),
+                            "qtd_orgs": str(len(orgs)), "lista_orgs": formatar_orgs(orgs),
+                            "qtd_offline": str(len(off)), "lista_offline": formatar_padrao(off),
+                            "qtd_sem_req": str(len(sem_req)), "lista_sem_req": formatar_padrao(sem_req),
+                            "qtd_visibilidade": str(len(vis)), "lista_visibilidade": formatar_padrao(vis),
+                            "qtd_inexistente": str(len(inex)), "lista_inexistente": formatar_padrao(inex),
+                            "qtd_inapropriado": str(len(inap)), "lista_inapropriado": formatar_padrao(inap)
+                        }
+                        
+                        st.session_state.metricas = {"lidos": total_lidos, "irregulares": total_irregulares, "ausentes": total_ausentes}
+                        
+                        status.update(label="Verificação concluída com sucesso!", state="complete", expanded=False)
+                        time.sleep(0.5) 
+                        
+                        st.session_state.pagina_atual = 'resultados'
+                        st.rerun()
+
+                    except Exception as e: 
+                        status.update(label="Erro no processamento", state="error", expanded=True)
+                        st.error(f"Detalhe do erro: {e}")
+
+    elif st.session_state.pagina_atual == 'resultados':
+
+        col_v1, col_v2, col_v3 = st.columns([1, 4, 1])
+        with col_v1:
+            if st.button("⬅️ VOLTAR AO INÍCIO", use_container_width=True):
+                st.session_state.pagina_atual = 'inicio'
+                st.rerun() 
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        col_met1, col_met2, col_met3 = st.columns(3)
+        col_met1.metric(label="👥 POLICIAIS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
+        col_met2.metric(label="⚠️ AVISOS DE IRREGULARIDADE", value=st.session_state.metricas["irregulares"])
+        col_met3.metric(label="😴 POLICIAIS AUSENTES", value=st.session_state.metricas["ausentes"])
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        col_view_esq, col_view_dir = st.columns([1, 1.2], gap="medium")
+        
+        with col_view_esq:
+            st.markdown("<div class='section-title'>📑 REGISTROS ANALISADOS</div>", unsafe_allow_html=True)
+            st.dataframe(st.session_state.df_view, use_container_width=True, height=350)
+            
+        with col_view_dir:
+            st.markdown("<div class='section-title'>📝 CONSOLIDAÇÃO DOS DADOS</div>", unsafe_allow_html=True)
+            st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
+            
+            if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
+                with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
+                    try:
+                        resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
+                        
+                        try:
+                            res = resposta_google.json()
+                            if res.get("status") == "sucesso": 
+                                st.success("✅ Documento gerado e arquivado!")
+                                
+                                url_final = res.get('url')
+                                st.markdown(f"""
+                                    <a href='{url_final}' target='_blank' class='btn-link-oficial'>
+                                        🔗 ACESSAR O RELATÓRIO OFICIAL AQUI
+                                    </a>
+                                """, unsafe_allow_html=True)
+                                
+                            else:
+                                st.error(f"Falha na comunicação: {res.get('mensagem')}")
+                                
+                        except Exception as decodificacao_erro:
+                            st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico no Apps Script.")
+                            st.info("Verifique se em 'Gerenciar Implantações' a opção 'Quem tem acesso' está como 'Qualquer pessoa'.")
+                            with st.expander("Ver resposta técnica do Google (Para diagnóstico)"):
+                                st.text(resposta_google.text) 
+                                
+                    except Exception as e:
+                        st.error(f"Erro de conexão com a base de dados: {e}")
+
+# ==========================================
+# --- PÁGINA 2: FERRAMENTA DE CÓPIA ---
+# ==========================================
+elif menu_selecionado == "Ferramenta de Cópia":
+    
+    st.markdown("""
+        <div class='custom-header'>
+            <h1 style='margin-bottom: 0px;'>FERRAMENTA DE EXTRAÇÃO</h1>
+            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Utilitário para cópia rápida de dados do System</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     with st.container(border=True):
-        col_esq, col_dir = st.columns([1, 2], gap="large") 
+        st.markdown("<div class='section-title'>🚀 COMO INSTALAR E UTILIZAR</div>", unsafe_allow_html=True)
         
-        with col_esq:
-            st.markdown("<div class='section-title'>📋 INSIRA OS NICKS COPIADOS DO SYSTEM ABAIXO</div>", unsafe_allow_html=True)
-            dados_colados = st.text_area(
-                "Copie as linhas da sua planilha e cole abaixo:", 
-                height=130, 
-                label_visibility="collapsed", 
-                placeholder="Cole os dados aqui..."
-            )
-
-        with col_dir:
-            st.markdown("<div class='section-title'>🕵️ CONSULTA POR GRADUAÇÃO</div>", unsafe_allow_html=True)
-            categoria_sel = st.selectbox(
-                "Selecione uma categoria de patente:", 
-                ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"],
-                label_visibility="collapsed"
-            )
-            st.markdown("<br>", unsafe_allow_html=True)
-            iniciar_btn = st.button(f"🔎 INICIAR VERIFICAÇÃO", type="primary", use_container_width=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # A Lógica roda aqui e manda o usuário para a página 2
-    if iniciar_btn:
-        if not dados_colados.strip():
-            st.warning("⚠️ O banco de dados está vazio. Por favor, cole os dados da planilha antes de iniciar.")
-        else:
-            with st.status("Processando dados de inteligência...", expanded=True) as status:
-                try:
-                    df = pd.read_csv(io.StringIO(dados_colados), sep='\t', header=None)
-                    indice_coluna_nick = 2 if df.shape[1] >= 3 else 0
-                    nicks = df.iloc[:, indice_coluna_nick].dropna().astype(str).tolist()
-                    nicks = [n.strip() for n in nicks if n.strip() and str(n).lower() != 'nan']
-                    total_lidos = len(nicks)
-                    
-                    st.write(f"Estabelecendo conexão segura para {total_lidos} policiais...")
-                    
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                        resultados = list(executor.map(lambda n: verificar_nick(n, categoria_sel), nicks))
-
-                    aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap = [], [], [], [], [], [], [], [], [], [], []
-
-                    for r in resultados:
-                        if not r: continue
-                        n = r["nick"]
-                        
-                        if r["inexistente"]: inex.append(n); continue
-                        if r["inapropriado"]: inap.append(n); continue
-                        if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"]); continue
-                        if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"]); continue
-                        if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"]); continue
-                        if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"]); continue
-                        if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"]); continue
-                        if r["outra_org"]: orgs.append(r["outra_org"]); continue
-                        if r["modo_offline"]: off.append(n); continue
-                        if r["sem_requisitos"]: sem_req.append(n); continue
-                        if r["visibilidade_off"]: vis.append(n); continue
-
-                    fuso_br = timezone(timedelta(hours=-3))
-                    data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
-                    
-                    total_ausentes = len(aus_p) + len(aus_7) + len(aus_20) + len(aus_60) + len(aus_90)
-                    total_irregulares = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
-
-                    relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total_irregulares}\n"
-                    relatorio += f"\nAusentes:\n{listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
-                    relatorio += f"\n\nOutras Orgs:\n{listar(orgs)}"
-                    relatorio += f"\n\nRetiraram-se dos grupos:\n{listar(sem_req)}"
-
-                    st.session_state.relatorio_texto = relatorio
-                    st.session_state.df_view = df 
-                    st.session_state.dados_google = {
-                        "categoria": categoria_sel, "data_hoje": data_hoje, "total": str(total_irregulares),
-                        "qtd_ausentes_padrao": str(len(aus_p)), "lista_ausentes_padrao": formatar_ausentes(aus_p),
-                        "qtd_aus_7_19": str(len(aus_7)), "lista_aus_7_19": formatar_ausentes(aus_7),
-                        "qtd_aus_20_mais": str(len(aus_20)), "lista_aus_20_mais": formatar_ausentes(aus_20),
-                        "qtd_aus_60_mais": str(len(aus_60)), "lista_aus_60_mais": formatar_ausentes(aus_60),
-                        "qtd_aus_90_mais": str(len(aus_90)), "lista_aus_90_mais": formatar_ausentes(aus_90),
-                        "qtd_orgs": str(len(orgs)), "lista_orgs": formatar_orgs(orgs),
-                        "qtd_offline": str(len(off)), "lista_offline": formatar_padrao(off),
-                        "qtd_sem_req": str(len(sem_req)), "lista_sem_req": formatar_padrao(sem_req),
-                        "qtd_visibilidade": str(len(vis)), "lista_visibilidade": formatar_padrao(vis),
-                        "qtd_inexistente": str(len(inex)), "lista_inexistente": formatar_padrao(inex),
-                        "qtd_inapropriado": str(len(inap)), "lista_inapropriado": formatar_padrao(inap)
-                    }
-                    
-                    st.session_state.metricas = {"lidos": total_lidos, "irregulares": total_irregulares, "ausentes": total_ausentes}
-                    
-                    # Status finalizado. Altera a página e força a recarga da tela
-                    status.update(label="Verificação concluída com sucesso!", state="complete", expanded=False)
-                    time.sleep(0.5) # Pausa rápida só para o usuário ver o check verde antes de mudar de tela
-                    
-                    st.session_state.pagina_atual = 'resultados'
-                    st.rerun() # Reinicia o site carregando a Página 2
-
-                except Exception as e: 
-                    status.update(label="Erro no processamento", state="error", expanded=True)
-                    st.error(f"Detalhe do erro: {e}")
-
-
-# ==========================================
-# --- PÁGINA 2: RESULTADOS ---
-# ==========================================
-elif st.session_state.pagina_atual == 'resultados':
-
-    # Botão de Voltar no topo
-    col_v1, col_v2, col_v3 = st.columns([1, 4, 1])
-    with col_v1:
-        if st.button("⬅️ VOLTAR AO INÍCIO", use_container_width=True):
-            st.session_state.pagina_atual = 'inicio'
-            st.rerun() # Volta para a página 1
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col_met1, col_met2, col_met3 = st.columns(3)
-    col_met1.metric(label="👥 POLICIAIS IDENTIFICADOS", value=st.session_state.metricas["lidos"])
-    col_met2.metric(label="⚠️ AVISOS DE IRREGULARIDADE", value=st.session_state.metricas["irregulares"])
-    col_met3.metric(label="😴 POLICIAIS AUSENTES", value=st.session_state.metricas["ausentes"])
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col_view_esq, col_view_dir = st.columns([1, 1.2], gap="medium")
-    
-    with col_view_esq:
-        st.markdown("<div class='section-title'>📑 REGISTROS ANALISADOS</div>", unsafe_allow_html=True)
-        st.dataframe(st.session_state.df_view, use_container_width=True, height=350)
+        st.write("Para agilizar sua conferência, você pode instalar um botão na barra de favoritos do seu navegador. Ele copia e formata todos os nicks da página do System com apenas um clique.")
         
-    with col_view_dir:
-        st.markdown("<div class='section-title'>📝 CONSOLIDAÇÃO DOS DADOS</div>", unsafe_allow_html=True)
-        st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
+        st.markdown("""
+        1. Clique no botão dourado abaixo para acessar a página oficial da ferramenta.
+        2. Na nova página, **arraste o botão indicado** para a barra de favoritos do seu navegador.
+        3. Quando você estiver na tela do System visualizando os policiais, basta **clicar no seu novo favorito**.
+        4. Volte aqui na Central DIC e aperte **Ctrl+V** na caixa de texto. Pronto!
+        """)
         
-        if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
-            with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
-                try:
-                    # Faz o envio dos dados
-                    resposta_google = requests.post(URL_WEBHOOK_GOOGLE, json=st.session_state.dados_google)
-                    
-                    # Tenta decodificar a resposta
-                    try:
-                        res = resposta_google.json()
-                        if res.get("status") == "sucesso": 
-                            st.success("✅ Documento gerado e arquivado!")
-                            
-                            # APLICANDO O BOTÃO ESTILIZADO COM O LINK
-                            url_final = res.get('url')
-                            st.markdown(f"""
-                                <a href='{url_final}' target='_blank' class='btn-link-oficial'>
-                                    🔗 ACESSAR O RELATÓRIO OFICIAL AQUI
-                                </a>
-                            """, unsafe_allow_html=True)
-                            
-                        else:
-                            st.error(f"Falha na comunicação: {res.get('mensagem')}")
-                            
-                    except Exception as decodificacao_erro:
-                        # Se não conseguir decodificar o JSON, mostra a resposta real do Google
-                        st.error("⚠️ O Google bloqueou o acesso ou ocorreu um erro crítico no Apps Script.")
-                        st.info("Verifique se em 'Gerenciar Implantações' a opção 'Quem tem acesso' está como 'Qualquer pessoa'.")
-                        with st.expander("Ver resposta técnica do Google (Para diagnóstico)"):
-                            st.text(resposta_google.text)
-                            
-                except Exception as e:
-                    st.error(f"Erro de conexão com a base de dados: {e}")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Aplicando o link fornecido com o design de botão oficial
+        st.markdown("""
+            <a href='https://guikunz.github.io/copiador-nicks/' target='_blank' class='btn-link-oficial'>
+                🔗 ACESSAR PÁGINA DE INSTALAÇÃO DO COPIADOR
+            </a>
+        """, unsafe_allow_html=True)
