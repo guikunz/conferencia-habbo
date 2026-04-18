@@ -90,6 +90,28 @@ st.markdown("""
         box-shadow: 0px 0px 15px rgba(234, 179, 8, 0.4);
     }
 
+    /* === NOVO: BOTÕES AZUIS DO FILTRO SYSTEM (Efeito 3D) === */
+    .btn-filtro {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #0288d1; /* Azul da imagem */
+        color: #ffffff !important;
+        padding: 14px 20px;
+        border-radius: 8px;
+        text-decoration: none !important;
+        font-weight: bold;
+        font-size: 1.05rem;
+        margin-bottom: 18px;
+        box-shadow: 5px 5px 0px #1c1917; /* Sombra dura estilo 3D */
+        transition: 0.15s ease-in-out;
+    }
+    .btn-filtro:hover {
+        transform: translate(4px, 4px); /* Botão "afunda" ao passar o mouse */
+        box-shadow: 1px 1px 0px #1c1917;
+        background-color: #0277bd;
+    }
+
     /* Estilizando métricas (cartões de resumo) */
     [data-testid="stMetricValue"] {
         color: #ffffff !important;
@@ -273,7 +295,7 @@ with st.sidebar:
     st.markdown("---")
     menu_selecionado = st.radio(
         "Navegação",
-        ["Conferência Oficial", "Ferramenta de Cópia"],
+        ["Conferência Oficial", "Ferramenta de Cópia", "Filtro do System"], # <- Nova página adicionada no menu
         label_visibility="collapsed"
     )
     st.markdown("---")
@@ -481,3 +503,61 @@ elif menu_selecionado == "Ferramenta de Cópia":
                 🔗 ACESSAR PÁGINA DE INSTALAÇÃO DO COPIADOR
             </a>
         """, unsafe_allow_html=True)
+
+
+# ==========================================
+# --- PÁGINA 3: FILTRO DO SYSTEM ---
+# ==========================================
+elif menu_selecionado == "Filtro do System":
+
+    st.markdown("""
+        <div class='custom-header'>
+            <h1 style='margin-bottom: 0px;'>FILTRO DO SYSTEM</h1>
+            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Links de atalho para consulta direta no banco de dados</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Dicionários com os links fornecidos
+    links_militares = {
+        "Soldados": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=1&limite=100",
+        "Cabos": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=2&limite=100",
+        "Sargentos": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=3&limite=100",
+        "Subtenentes": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=4&limite=100",
+        "Aspirantes": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=5&limite=100",
+        "Tenentes": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=6&limite=100",
+        "Capitães": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=7&limite=100",
+        "Majores": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=8&limite=100",
+        "Tenentes-Coronéis": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=9&limite=100",
+        "Coronéis": "https://dic.systemhb.net/membros?filtro=-1&hierarquia=1&patente=10&limite=100"
+    }
+
+    links_pagas = {
+        "Sócio": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=1",
+        "Agente": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=2",
+        "Analista": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=3",
+        "Coordenador": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=4",
+        "Promotor": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=5",
+        "Advogado": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=6",
+        "Administrador": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=7",
+        "Delegado": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=8",
+        "Investigador": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=9",
+        "Detetive": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=10",
+        "Supervisor": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=11",
+        "Líder": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=12",
+        "Líder-Executivo": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=13",
+        "Chanceler": "https://dic.systemhb.net/membros?q=&filtro=-1&hierarquia=2&patente=14"
+    }
+
+    # Layout de Duas Colunas
+    with st.container(border=True):
+        col1, col2 = st.columns(2, gap="large")
+
+        with col1:
+            st.markdown("<div class='section-title' style='text-align: center;'>🪖 HIERARQUIA MILITAR</div><br>", unsafe_allow_html=True)
+            for nome_botao, link_url in links_militares.items():
+                st.markdown(f"<a href='{link_url}' target='_blank' class='btn-filtro'>{nome_botao}</a>", unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("<div class='section-title' style='text-align: center;'>💎 HIERARQUIA PAGA</div><br>", unsafe_allow_html=True)
+            for nome_botao, link_url in links_pagas.items():
+                st.markdown(f"<a href='{link_url}' target='_blank' class='btn-filtro'>{nome_botao}</a>", unsafe_allow_html=True)
