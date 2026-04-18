@@ -129,6 +129,17 @@ st.markdown("""
         background-color: #14110f !important;
         border-right: 1px solid #423512 !important;
     }
+    
+    /* Forçando a cor dos textos do Menu Lateral para ficarem bem visíveis */
+    [data-testid="stSidebar"] .stRadio p {
+        color: #ffffff !important;
+        font-size: 1.1rem;
+    }
+    
+    /* Cor clara para o texto de rodapé no menu lateral */
+    [data-testid="stSidebar"] small, [data-testid="stSidebar"] .stCaptionContainer {
+        color: #a8a29e !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -258,7 +269,7 @@ def listar(lista): return "\n".join(lista) if lista else "Nenhum"
 # --- MENU LATERAL ---
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='text-align: center; color: #eab308;'>🕵️ MENU DIC</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #eab308;'>🕵️ MENU - Sp</h2>", unsafe_allow_html=True)
     st.markdown("---")
     menu_selecionado = st.radio(
         "Navegação",
@@ -465,7 +476,6 @@ elif menu_selecionado == "Ferramenta de Cópia":
         
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Aplicando o link fornecido com o design de botão oficial
         st.markdown("""
             <a href='https://guikunz.github.io/copiador-nicks/' target='_blank' class='btn-link-oficial'>
                 🔗 ACESSAR PÁGINA DE INSTALAÇÃO DO COPIADOR
