@@ -288,7 +288,7 @@ if menu_selecionado == "Conferência Oficial":
     st.markdown("""
         <div class='custom-header'>
             <h1 style='margin-bottom: 0px;'>DEPARTAMENTO DE INVESTIGAÇÃO CRIMINAL - Supervisores</h1>
-            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de graduação, patentes e cargos</p>
+            <p style='color: #a8a29e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;'>Módulo de Conferência de Graduação, Posto e Cargos</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -308,7 +308,7 @@ if menu_selecionado == "Conferência Oficial":
                 )
 
             with col_dir:
-                st.markdown("<div class='section-title'>🕵️ CONSULTA POR GRADUAÇÃO</div>", unsafe_allow_html=True)
+                st.markdown("<div class='section-title'>🕵️ CONSULTA POR  Graduação, Posto e Cargos</div>", unsafe_allow_html=True)
                 categoria_sel = st.selectbox(
                     "Selecione uma categoria de patente:", 
                     ["Soldados", "Cabos a Subtenentes", "Aspirantes a Coronéis", "Cargos Executivos"],
