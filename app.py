@@ -314,7 +314,7 @@ with st.sidebar:
         label_visibility="collapsed"
     )
     st.markdown("---")
-    st.caption("© 2026 DIC - Supervisores")
+    st.caption("© 2026 DIC - Supervisores - by: gui_kunz")
 
 
 # ==========================================
