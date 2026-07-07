@@ -182,7 +182,7 @@ st.markdown("""
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
 PALAVRAS_PROIBIDAS = [
-    "exército", "dme", "rcc", "csi", "dph", "pab", "dpe", "dsp", "depi", "dpt", "dtam", "phs",
+    "exército", "dme", "rcc", "csi", "dph", "pab", "dpe", "dsp", "depi", "dpt", "dtam", "phs", "dep"
     "marinha", "swat", "pmhh", "rhc", "pho", "ex.br", "mcc", "feb", "drh", "dco", "pso", "dpo", "grm", "dho", "cmi", "dim", "doh", "drm"
 ]
 PALAVRAS_INAPROPRIADAS = [
