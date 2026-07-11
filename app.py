@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 import concurrent.futures
 import time
 import io
+import re  # Nova biblioteca adicionada para buscas exatas (Regex)
 
 # CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Central de conferências DIC/Sp", page_icon="🕵️", layout="wide")
@@ -104,13 +105,13 @@ st.markdown("""
         font-weight: bold;
         font-size: 1.05rem;
         margin-bottom: 18px;
-        box-shadow: 4px 4px 0px #000000; /* Sombra preta dura para o efeito 3D */
+        box-shadow: 4px 4px 0px #000000;
         transition: 0.15s ease-in-out;
         text-transform: uppercase;
     }
     .btn-filtro:hover {
-        transform: translate(4px, 4px); /* Botão 'afunda' */
-        box-shadow: 0px 0px 0px #000000; /* Remove a sombra ao afundar */
+        transform: translate(4px, 4px);
+        box-shadow: 0px 0px 0px #000000;
         background-color: #eab308;
         color: #0b090a !important;
         border: 1px solid #eab308;
@@ -190,6 +191,11 @@ PALAVRAS_INAPROPRIADAS = [
     "vagina", "xota", "cu", "fdp", "porra", "caralho"
 ]
 
+# Compila as expressões regulares para buscas exatas (ignora se a palavra estiver dentro de outra)
+REGEX_PROIBIDAS = re.compile(r'\b(?:' + '|'.join(map(re.escape, PALAVRAS_PROIBIDAS)) + r')\b')
+REGEX_INAPROPRIADAS = re.compile(r'\b(?:' + '|'.join(map(re.escape, PALAVRAS_INAPROPRIADAS)) + r')\b')
+REGEX_DIC = re.compile(r'\bdic\b')
+
 URL_WEBHOOK_GOOGLE = "https://script.google.com/macros/s/AKfycbwt60cX_RXKl7X0jS6LeqDhXdOV1QGm1d4ErZkntJPWJfbLTVHBBOSHxd2uMaWDwEuVGA/exec"
 
 def verificar_nick(nick, categoria):
@@ -204,7 +210,8 @@ def verificar_nick(nick, categoria):
         "outra_org": None, "sem_requisitos": False
     }
 
-    if any(p in nick.lower() for p in PALAVRAS_INAPROPRIADAS): resultado["inapropriado"] = True
+    # Verifica palavras inapropriadas com regex para evitar falsos positivos
+    if REGEX_INAPROPRIADAS.search(nick.lower()): resultado["inapropriado"] = True
 
     data = None
     sucesso_usuario = False
@@ -223,11 +230,9 @@ def verificar_nick(nick, categoria):
         resultado["inexistente"] = True
         return resultado
 
-    # CORREÇÃO DE PRIORIDADE: Verifica primeiro se o Perfil Oculto está ativo.
     if not data.get("profileVisible", True): 
         resultado["visibilidade_off"] = True
     else:
-        # Só verifica se a data está vazia se o perfil for público.
         last_access = data.get("lastAccessTime")
         if not last_access: 
             resultado["modo_offline"] = True
@@ -260,14 +265,20 @@ def verificar_nick(nick, categoria):
                         desc_l = grupo.get("description", "").lower()
                         
                         is_dic_dept = False
-                        if categoria in ["Aspirantes a Coronéis", "Cargos Executivos"]:
-                            if nome_l.startswith("[dic]"): is_dic_dept = True
+                        
+                        # NOVA REGRA: Se a palavra 'dic' aparece exata e isolada no nome ou descrição, ignora
+                        if REGEX_DIC.search(nome_l) or REGEX_DIC.search(desc_l):
+                            is_dic_dept = True
                                 
-                        if categoria == "Aspirantes a Coronéis" and "[csi] corredor" in nome_l: is_dic_dept = True
+                        # Mantém a exceção antiga do CSI Corredor
+                        if categoria == "Aspirantes a Coronéis" and "[csi] corredor" in nome_l: 
+                            is_dic_dept = True
                                 
                         if not is_dic_dept:
-                            if not resultado["outra_org"] and any(p in nome_l or p in desc_l for p in PALAVRAS_PROIBIDAS):
-                                resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
+                            if not resultado["outra_org"]:
+                                # Busca exata pelas palavras proibidas (Ex: pega 'dme' em '★ POLÍCIA DME ★', mas ignora 'dep' em 'departamento')
+                                if REGEX_PROIBIDAS.search(nome_l) or REGEX_PROIBIDAS.search(desc_l):
+                                    resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
                         
                         grupos_identificados.append(nome_l)
                     break 
@@ -313,7 +324,6 @@ with st.sidebar:
     st.markdown("---")
     menu_selecionado = st.radio(
         "Navegação",
-        # Ordem das opções atualizada
         ["Conferência Oficial", "Filtro do System", "Ferramenta de Cópia"],
         label_visibility="collapsed"
     )
@@ -382,7 +392,6 @@ if menu_selecionado == "Conferência Oficial":
                             if not r: continue
                             n = r["nick"]
                             
-                            # CORREÇÃO DE PRIORIDADE: Captura perfis Inexistentes, Ocultos e Offline antes das outras validações
                             if r["inexistente"]: inex.append(n); continue
                             if r["inapropriado"]: inap.append(n); continue
                             if r["visibilidade_off"]: vis.append(n); continue
@@ -403,7 +412,6 @@ if menu_selecionado == "Conferência Oficial":
                         total_ausentes = len(aus_p) + len(aus_7) + len(aus_20) + len(aus_60) + len(aus_90)
                         total_irregulares = sum(map(len, [aus_p, aus_7, aus_20, aus_60, aus_90, orgs, sem_req, off, vis, inex, inap]))
 
-                        # ATUALIZADO: Todos os campos agora são exibidos na pré-visualização
                         relatorio = f"Conferência de {categoria_sel}\nData: {data_hoje}\nTotal de irregulares: {total_irregulares}\n"
                         relatorio += f"\nAusentes:\n{listar(aus_p + aus_7 + aus_20 + aus_60 + aus_90)}"
                         relatorio += f"\n\nOutras Orgs:\n{listar(orgs)}"
