@@ -182,7 +182,7 @@ st.markdown("""
 URL_USER = "https://www.habbo.com.br/api/public/users?name="
 
 PALAVRAS_PROIBIDAS = [
-    "exército", "dme", "rcc", "csi", "dph", "pab", "dpe", "dsp", "depi", "dpt", "dtam", "phs", "dep"
+    "exército", "dme", "rcc", "csi", "dph", "pab", "dpe", "dsp", "depi", "dpt", "dtam", "phs", "dep",
     "marinha", "swat", "pmhh", "rhc", "pho", "ex.br", "mcc", "feb", "drh", "dco", "pso", "dpo", "grm", "dho", "cmi", "dim", "doh", "drm"
 ]
 PALAVRAS_INAPROPRIADAS = [
@@ -223,25 +223,29 @@ def verificar_nick(nick, categoria):
         resultado["inexistente"] = True
         return resultado
 
-    if not data.get("profileVisible", True): resultado["visibilidade_off"] = True
-
-    last_access = data.get("lastAccessTime")
-    if not last_access: resultado["modo_offline"] = True
+    # CORREÇÃO DE PRIORIDADE: Verifica primeiro se o Perfil Oculto está ativo.
+    if not data.get("profileVisible", True): 
+        resultado["visibilidade_off"] = True
     else:
-        try:
-            data_api = datetime.fromisoformat(last_access.replace('+0000', '+00:00'))
-            agora = datetime.now(timezone.utc)
-            dias = int(round((agora - data_api).total_seconds() / 86400))
-            
-            if categoria in ["Soldados", "Cabos a Subtenentes"]:
-                if dias >= 20: resultado["ausente_padrao"] = f"{nick} ({dias} dias)"
-            elif categoria == "Aspirantes a Coronéis":
-                if 7 <= dias <= 19: resultado["ausente_7_19"] = f"{nick} ({dias} dias)"
-                elif dias >= 20: resultado["ausente_20_mais"] = f"{nick} ({dias} dias)"
-            elif categoria == "Cargos Executivos":
-                if 60 <= dias < 90: resultado["ausente_60_mais"] = f"{nick} ({dias} dias)"
-                elif dias >= 90: resultado["ausente_90_mais"] = f"{nick} ({dias} dias)"
-        except ValueError: pass 
+        # Só verifica se a data está vazia se o perfil for público.
+        last_access = data.get("lastAccessTime")
+        if not last_access: 
+            resultado["modo_offline"] = True
+        else:
+            try:
+                data_api = datetime.fromisoformat(last_access.replace('+0000', '+00:00'))
+                agora = datetime.now(timezone.utc)
+                dias = int(round((agora - data_api).total_seconds() / 86400))
+                
+                if categoria in ["Soldados", "Cabos a Subtenentes"]:
+                    if dias >= 20: resultado["ausente_padrao"] = f"{nick} ({dias} dias)"
+                elif categoria == "Aspirantes a Coronéis":
+                    if 7 <= dias <= 19: resultado["ausente_7_19"] = f"{nick} ({dias} dias)"
+                    elif dias >= 20: resultado["ausente_20_mais"] = f"{nick} ({dias} dias)"
+                elif categoria == "Cargos Executivos":
+                    if 60 <= dias < 90: resultado["ausente_60_mais"] = f"{nick} ({dias} dias)"
+                    elif dias >= 90: resultado["ausente_90_mais"] = f"{nick} ({dias} dias)"
+            except ValueError: pass 
 
     unique_id = data.get("uniqueId")
     grupos_identificados = []
@@ -378,17 +382,20 @@ if menu_selecionado == "Conferência Oficial":
                             if not r: continue
                             n = r["nick"]
                             
+                            # CORREÇÃO DE PRIORIDADE: Captura perfis Inexistentes, Ocultos e Offline antes das outras validações
                             if r["inexistente"]: inex.append(n); continue
                             if r["inapropriado"]: inap.append(n); continue
+                            if r["visibilidade_off"]: vis.append(n); continue
+                            if r["modo_offline"]: off.append(n); continue
+                            
                             if r["ausente_90_mais"]: aus_90.append(r["ausente_90_mais"]); continue
                             if r["ausente_60_mais"]: aus_60.append(r["ausente_60_mais"]); continue
                             if r["ausente_20_mais"]: aus_20.append(r["ausente_20_mais"]); continue
                             if r["ausente_7_19"]: aus_7.append(r["ausente_7_19"]); continue
                             if r["ausente_padrao"]: aus_p.append(r["ausente_padrao"]); continue
+                            
                             if r["outra_org"]: orgs.append(r["outra_org"]); continue
-                            if r["modo_offline"]: off.append(n); continue
                             if r["sem_requisitos"]: sem_req.append(n); continue
-                            if r["visibilidade_off"]: vis.append(n); continue
 
                         fuso_br = timezone(timedelta(hours=-3))
                         data_hoje = datetime.now(fuso_br).strftime("%d/%m/%Y")
