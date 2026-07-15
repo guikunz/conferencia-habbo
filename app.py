@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import concurrent.futures
 import time
 import io
-import re  # Nova biblioteca adicionada para buscas exatas (Regex)
+import re
 
 # CONFIGURAÇÕES DA PÁGINA
 st.set_page_config(page_title="Central de conferências DIC/Sp", page_icon="🕵️", layout="wide")
@@ -191,7 +191,7 @@ PALAVRAS_INAPROPRIADAS = [
     "vagina", "xota", "cu", "fdp", "porra", "caralho"
 ]
 
-# Compila as expressões regulares para buscas exatas (ignora se a palavra estiver dentro de outra)
+# Compila as expressões regulares para buscas exatas
 REGEX_PROIBIDAS = re.compile(r'\b(?:' + '|'.join(map(re.escape, PALAVRAS_PROIBIDAS)) + r')\b')
 REGEX_INAPROPRIADAS = re.compile(r'\b(?:' + '|'.join(map(re.escape, PALAVRAS_INAPROPRIADAS)) + r')\b')
 REGEX_DIC = re.compile(r'\bdic\b')
@@ -210,7 +210,7 @@ def verificar_nick(nick, categoria):
         "outra_org": None, "sem_requisitos": False
     }
 
-    # Verifica palavras inapropriadas com regex para evitar falsos positivos
+    # Verifica palavras inapropriadas com regex
     if REGEX_INAPROPRIADAS.search(nick.lower()): resultado["inapropriado"] = True
 
     data = None
@@ -242,14 +242,18 @@ def verificar_nick(nick, categoria):
                 agora = datetime.now(timezone.utc)
                 dias = int(round((agora - data_api).total_seconds() / 86400))
                 
+                # === LÓGICA DE DIAS ATUALIZADA (+1 DIA EM TUDO) ===
                 if categoria in ["Soldados", "Cabos a Subtenentes"]:
-                    if dias >= 20: resultado["ausente_padrao"] = f"{nick} ({dias} dias)"
+                    if dias >= 21: resultado["ausente_padrao"] = f"{nick} ({dias} dias)"
+                
                 elif categoria == "Aspirantes a Coronéis":
-                    if 7 <= dias <= 19: resultado["ausente_7_19"] = f"{nick} ({dias} dias)"
-                    elif dias >= 20: resultado["ausente_20_mais"] = f"{nick} ({dias} dias)"
+                    if 8 <= dias <= 20: resultado["ausente_7_19"] = f"{nick} ({dias} dias)"
+                    elif dias >= 21: resultado["ausente_20_mais"] = f"{nick} ({dias} dias)"
+                
                 elif categoria == "Cargos Executivos":
-                    if 60 <= dias < 90: resultado["ausente_60_mais"] = f"{nick} ({dias} dias)"
-                    elif dias >= 90: resultado["ausente_90_mais"] = f"{nick} ({dias} dias)"
+                    if 61 <= dias < 91: resultado["ausente_60_mais"] = f"{nick} ({dias} dias)"
+                    elif dias >= 91: resultado["ausente_90_mais"] = f"{nick} ({dias} dias)"
+            
             except ValueError: pass 
 
     unique_id = data.get("uniqueId")
@@ -266,17 +270,16 @@ def verificar_nick(nick, categoria):
                         
                         is_dic_dept = False
                         
-                        # NOVA REGRA: Se a palavra 'dic' aparece exata e isolada no nome ou descrição, ignora
+                        # Se a palavra 'dic' aparece exata no nome ou descrição
                         if REGEX_DIC.search(nome_l) or REGEX_DIC.search(desc_l):
                             is_dic_dept = True
                                 
-                        # Mantém a exceção antiga do CSI Corredor
+                        # Exceção do CSI Corredor
                         if categoria == "Aspirantes a Coronéis" and "[csi] corredor" in nome_l: 
                             is_dic_dept = True
                                 
                         if not is_dic_dept:
                             if not resultado["outra_org"]:
-                                # Busca exata pelas palavras proibidas (Ex: pega 'dme' em '★ POLÍCIA DME ★', mas ignora 'dep' em 'departamento')
                                 if REGEX_PROIBIDAS.search(nome_l) or REGEX_PROIBIDAS.search(desc_l):
                                     resultado["outra_org"] = f"{nick} → {grupo.get('name')}"
                         
@@ -475,7 +478,8 @@ if menu_selecionado == "Conferência Oficial":
             
         with col_view_dir:
             st.markdown("<div class='section-title'>📝 CONSOLIDAÇÃO DOS DADOS</div>", unsafe_allow_html=True)
-            st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=265, label_visibility="collapsed")
+            # AQUI: Aumentei o height para 450 para não esconder os dados!
+            st.text_area("Resultado gerado", st.session_state.relatorio_texto, height=450, label_visibility="collapsed")
             
             if st.button("GERAR O RELATÓRIO OFICIAL 📄", type="primary", use_container_width=True):
                 with st.spinner("Sincronizando com o Arquivo Central (Google Docs)..."):
